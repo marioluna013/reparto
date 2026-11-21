@@ -766,21 +766,30 @@
   }
 
   // ==========================================
-  // AJUSTE INTELIGENTE: AUTOVÍA (+0%) VS URBANO (+30%)
+  // CALIBRACIÓN FINAL:
+  // - Autovía (>=65 km/h y >2.5 km): +0%
+  // - Urbano corto (< 7 min / 420s): +30% + 2.5 min (150s) fijos
+  // - Urbano >= 7 min: +30%
   // ==========================================
   function adjustSegmentDuration(rawSeconds, distanceMeters) {
     if (!rawSeconds || rawSeconds <= 0) return 0;
-    if (!distanceMeters || distanceMeters <= 0) return rawSeconds * 1.30;
+    if (!distanceMeters || distanceMeters <= 0) {
+      return rawSeconds < 420 ? (rawSeconds * 1.30) + 150 : rawSeconds * 1.30;
+    }
 
-    // Velocidad media teórica en km/h
     const avgSpeedKmh = (distanceMeters / 1000) / (rawSeconds / 3600);
 
-    // Si es autovía o vía rápida (>= 65 km/h de media y más de 2.5 km), lo dejamos intacto (+0%)
+    // 1. Autovía o vía rápida: se mantiene intacto (+0%)
     if (avgSpeedKmh >= 65 && distanceMeters > 2500) {
       return rawSeconds;
     }
 
-    // En tramos urbanos, polígonos o saltos cortos sumamos un 30% extra
+    // 2. Saltos urbanos cortos (< 7 min teóricos): +30% + 2.5 min fijos
+    if (rawSeconds < 420) {
+      return (rawSeconds * 1.30) + 150;
+    }
+
+    // 3. Resto de tramos urbanos (>= 7 min): +30%
     return rawSeconds * 1.30;
   }
 
@@ -885,7 +894,7 @@
   }
 
   // ==========================================
-  // OPTIMIZADOR CON VENTANAS HORARIAS Y +30% URBANO
+  // OPTIMIZADOR CON VENTANAS HORARIAS Y CALIBRACIÓN URBANA
   // ==========================================
   async function optimizeRoute() {
     if (stops.length < 2) {
@@ -928,7 +937,6 @@
       }
 
       const coordString = points.map(p => `${p.lng},${p.lat}`).join(';');
-      // Pedimos duración Y distancia para distinguir autovía vs urbano en cada par de paradas
       const tableUrl = `https://router.project-osrm.org/table/v1/driving/${coordString}?annotations=duration,distance`;
       const tableRes = await fetch(tableUrl);
       const tableData = await tableRes.json();
@@ -941,7 +949,6 @@
       const rawDistances = tableData.distances || [];
       const n = points.length;
 
-      // Construimos matriz de tiempos ajustados (Autovía +0%, Urbano +30%)
       const durations = Array.from({ length: n }, (_, r) =>
         Array.from({ length: n }, (_, c) => {
           if (r === c) return 0;
@@ -1079,7 +1086,6 @@
       const orderedPoints = bestOrder.map(idx => points[idx]);
       stops = orderedPoints.filter(p => !p.isGps);
 
-      // Obtenemos la geometría final y calculamos los tiempos exactos tramo a tramo con el ajuste
       const routeCoordStr = orderedPoints.map(p => `${p.lng},${p.lat}`).join(';');
       const routeUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordStr}?overview=full&geometries=geojson`;
       const routeRes = await fetch(routeUrl);
