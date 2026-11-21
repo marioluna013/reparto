@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>RutaReparto Pro - Alicante & Murcia</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --card-hover: #334155;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --border: #334155;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        padding-bottom: 80px;
+      }
+
+      header {
+        background: #020617;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+      }
+      header h1 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      header span.badge {
+        font-size: 0.7rem;
+        background: var(--primary);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 12px;
+      }
+
+      .search-box {
+        position: relative;
+        margin-bottom: 10px;
+      }
+      .search-input-wrap {
+        display: flex;
+        gap: 6px;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font-size: 1rem;
+        outline: none;
+      }
+      input[type="text"]:focus {
+        border-color: var(--primary);
+      }
+
+      #search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-top: 4px;
+        max-height: 240px;
+        overflow-y: auto;
+        z-index: 1001;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        display: none;
+      }
+      .result-item {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .result-item:last-child {
+        border-bottom: none;
+      }
+      .result-item:hover {
+        background: var(--card-hover);
+      }
+      .result-sub {
+        font-size: 0.75rem;
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+
+      .map-wrapper {
+        position: relative;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        margin-bottom: 12px;
+      }
+      #map {
+        height: 280px;
+        width: 100%;
+        z-index: 1;
+      }
+      .map-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 500;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .map-btn {
+        background: rgba(15, 23, 42, 0.9);
+        color: white;
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+      }
+      .map-hint {
+        background: rgba(2, 6, 23, 0.85);
+        color: var(--muted);
+        font-size: 0.75rem;
+        padding: 6px 10px;
+        text-align: center;
+      }
+
+      .actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .btn {
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        color: white;
+      }
+      .btn-primary {
+        background: var(--primary);
+      }
+      .btn-primary:active {
+        background: var(--primary-hover);
+      }
+      .btn-success {
+        background: var(--success);
+      }
+      .btn-warning {
+        background: var(--warning);
+        color: #0f172a;
+      }
+      .btn-danger {
+        background: var(--danger);
+      }
+      .btn-secondary {
+        background: var(--card);
+        border: 1px solid var(--border);
+      }
+      .btn-full {
+        grid-column: span 2;
+      }
+
+      .route-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--card);
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 0.85rem;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .route-options label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+
+      .summary-bar {
+        background: #172554;
+        border: 1px solid #1d4ed8;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .stop-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .stop-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: opacity 0.2s;
+      }
+      .stop-card.done {
+        opacity: 0.5;
+        border-color: var(--success);
+      }
+      .stop-card.is-start {
+        border-color: var(--warning);
+      }
+      .stop-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .stop-num {
+        background: var(--primary);
+        color: white;
+        min-width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin-top: 2px;
+      }
+      .stop-card.done .stop-num {
+        background: var(--success);
+      }
+      .stop-card.is-start .stop-num {
+        background: var(--warning);
+        color: #0f172a;
+      }
+      .stop-info {
+        flex: 1;
+      }
+      .stop-title {
+        font-weight: 700;
+        font-size: 0.98rem;
+        line-height: 1.3;
+      }
+      .stop-coords {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .stop-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--border);
+        padding-top: 8px;
+      }
+      .btn-sm {
+        padding: 7px 10px;
+        font-size: 0.82rem;
+        border-radius: 6px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .btn-nav {
+        background: var(--success);
+        flex: 1;
+        justify-content: center;
+        font-size: 0.9rem;
+      }
+      .btn-icon {
+        background: var(--card-hover);
+        padding: 7px 10px;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 2000;
+        padding: 16px;
+        overflow-y: auto;
+      }
+      .modal-content {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 16px;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .saved-item {
+        background: var(--card);
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .custom-pin {
+        background: #2563eb;
+        color: white;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 12px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+      }
+      .custom-pin.start-pin {
+        background: #f59e0b;
+        color: #0f172a;
+      }
+      .gps-pin {
+        background: #10b981;
+        color: white;
+        border: 2px solid white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        box-shadow: 0 0 10px #10b981;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🚚 RutaReparto <span class="badge">ALC + MUR</span></h1>
+      <button class="btn-sm btn-secondary" onclick="openSavedModal()">⭐ Clientes (<span id="saved-count">0</span>)</button>
+    </header>
+
+    <div class="container">
+      <div class="search-box">
+        <div class="search-input-wrap">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Buscar calle, polígono, instituto (ej. Cervantes)..."
+            autocomplete="off" />
+          <button class="btn btn-secondary" onclick="clearSearch()" style="padding: 0 12px">✕</button>
+        </div>
+        <div id="search-results"></div>
+      </div>
+
+      <div class="map-wrapper">
+        <div id="map"></div>
+        <div class="map-controls">
+          <button class="map-btn" onclick="toggleMapLayer()" id="layer-btn">🛰️ Satélite</button>
+          <button class="map-btn" onclick="locateUser(true)">📍 Mi GPS</button>
+        </div>
+        <div class="map-hint">💡 Toca directamente en cualquier punto del mapa para añadir una parada</div>
+      </div>
+
+      <div class="route-options">
+        <label>
+          <input type="checkbox" id="start-from-gps" checked />
+          Salir desde mi GPS (si está activo)
+        </label>
+        <label>
+          <input type="checkbox" id="roundtrip" />
+          Volver al inicio
+        </label>
+      </div>
+
+      <div class="actions-grid">
+        <button class="btn btn-primary btn-full" onclick="optimizeRoute()" id="btn-optimize">
+          ⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">0</span>)
+        </button>
+        <button class="btn btn-secondary" onclick="clearAllStops()">🗑️ Limpiar lista</button>
+        <button class="btn btn-secondary" onclick="fitMapToStops()">🔍 Ver todas</button>
+      </div>
+
+      <div class="summary-bar" id="summary-bar" style="display: none">
+        <span>🏁 Distancia: <strong id="total-dist">0 km</strong></span>
+        <span>⏱️ Conducción: <strong id="total-time">0 min</strong></span>
+      </div>
+
+      <div class="stop-list" id="stop-list"></div>
+    </div>
+
+    <div class="modal" id="saved-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>⭐ Clientes / Sitios Guardados</h3>
+          <button class="btn-sm btn-danger" onclick="closeSavedModal()">Cerrar</button>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 12px">
+          Toca "+ Ruta" para añadir un cliente habitual a tu reparto de hoy.
+        </p>
+        <div id="saved-list" style="margin-bottom: 16px"></div>
+
+        <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
+          <button class="btn-sm btn-primary" onclick="exportBackup()">💾 Exportar copia (.json)</button>
+          <label class="btn-sm btn-secondary" style="cursor: pointer">
+            📂 Cargar copia
+            <input type="file" accept=".json" onchange="importBackup(event)" style="display: none" />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+      const BBOX_ALICANTE_MURCIA = "-2.45,37.35,0.35,38.95";
+      const CENTER_DEFAULT = [38.15, -0.85];
+
+      let stops = JSON.parse(localStorage.getItem("reparto_stops") || "[]");
+      let savedClients = JSON.parse(localStorage.getItem("reparto_saved") || "[]");
+      let userCoords = null;
+      let isSatellite = false;
+      let fixedStartIndex = null; // Permite fijar manualmente qué parada es la salida si no hay GPS
+
+      const map = L.map("map").setView(CENTER_DEFAULT, 9);
+
+      const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap",
+        maxZoom: 19,
+      }).addTo(map);
+
+      const satelliteLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "© Esri Satélite",
+          maxZoom: 19,
+        },
+      );
+
+      let markersLayer = L.layerGroup().addTo(map);
+      let routeLine = null;
+      let gpsMarker = null;
+
+      function toggleMapLayer() {
+        const btn = document.getElementById("layer-btn");
+        if (isSatellite) {
+          map.removeLayer(satelliteLayer);
+          streetLayer.addTo(map);
+          btn.textContent = "🛰️ Satélite";
+        } else {
+          map.removeLayer(streetLayer);
+          satelliteLayer.addTo(map);
+          btn.textContent = "🗺️ Mapa";
+        }
+        isSatellite = !isSatellite;
+      }
+
+      function locateUser(centerMap = false) {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            userCoords = [pos.coords.latitude, pos.coords.longitude];
+            if (gpsMarker) map.removeLayer(gpsMarker);
+            const icon = L.divIcon({ className: "gps-pin", html: "🚚", iconSize: [28, 28], iconAnchor: [14, 14] });
+            gpsMarker = L.marker(userCoords, { icon }).addTo(map).bindPopup("Tu ubicación actual");
+            if (centerMap) map.setView(userCoords, 15);
+          },
+          (err) => {
+            console.warn("Error GPS:", err);
+          },
+          { enableHighAccuracy: true, timeout: 8000 },
+        );
+      }
+
+      map.on("click", function (e) {
+        const lat = parseFloat(e.latlng.lat.toFixed(6));
+        const lng = parseFloat(e.latlng.lng.toFixed(6));
+        const defaultName = `Punto mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        const name = prompt("Nombre para esta parada (ej. Nave 4, Cliente...):", defaultName);
+        if (name !== null && name.trim() !== "") {
+          addStop(name.trim(), lat, lng);
+        }
+      });
+
+      const searchInput = document.getElementById("search-input");
+      const searchResults = document.getElementById("search-results");
+      let searchTimeout = null;
+
+      searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        const query = searchInput.value.trim();
+        if (query.length < 3) {
+          searchResults.style.display = "none";
+          return;
+        }
+        searchTimeout = setTimeout(() => searchAddress(query), 400);
+      });
+
+      async function searchAddress(query) {
+        try {
+          const biasLat = userCoords ? userCoords[0] : CENTER_DEFAULT[0];
+          const biasLon = userCoords ? userCoords[1] : CENTER_DEFAULT[1];
+
+          const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=${BBOX_ALICANTE_MURCIA}&lat=${biasLat}&lon=${biasLon}&limit=7`;
+          const res = await fetch(url);
+          const data = await res.json();
+
+          searchResults.innerHTML = "";
+          if (!data.features || data.features.length === 0) {
+            searchResults.innerHTML =
+              '<div class="result-item">Sin resultados en Alicante/Murcia. Prueba tocando en el mapa.</div>';
+            searchResults.style.display = "block";
+            return;
+          }
+
+          data.features.forEach((f) => {
+            const p = f.properties;
+            const coords = f.geometry.coordinates;
+            const title = p.name || p.street || "Ubicación";
+            const details = [p.street, p.housenumber, p.postcode, p.city || p.town || p.village, p.state]
+              .filter(Boolean)
+              .join(", ");
+
+            const fullName = p.name && p.street ? `${p.name} (${p.street})` : details || title;
+
+            const div = document.createElement("div");
+            div.className = "result-item";
+            div.innerHTML = `<strong>${title}</strong><span class="result-sub">${details}</span>`;
+            div.onclick = () => {
+              addStop(fullName, coords[1], coords[0]);
+              clearSearch();
+              map.setView([coords[1], coords[0]], 16);
+            };
+            searchResults.appendChild(div);
+          });
+          searchResults.style.display = "block";
+        } catch (e) {
+          console.error("Error buscando dirección:", e);
+        }
+      }
+
+      function clearSearch() {
+        searchInput.value = "";
+        searchResults.style.display = "none";
+      }
+
+      function addStop(name, lat, lng) {
+        stops.push({ id: Date.now() + Math.random(), name, lat, lng, done: false, isStart: false });
+        saveAndRender();
+      }
+
+      function setAsStart(index) {
+        stops.forEach((s, i) => (s.isStart = i === index ? !s.isStart : false));
+        // Si marca una salida manual, desmarcamos salir desde GPS para evitar conflictos
+        if (stops[index].isStart) {
+          document.getElementById("start-from-gps").checked = false;
+        }
+        saveAndRender();
+      }
+
+      function removeStop(index) {
+        stops.splice(index, 1);
+        clearRouteLine();
+        saveAndRender();
+      }
+
+      function toggleDone(index) {
+        stops[index].done = !stops[index].done;
+        saveAndRender();
+      }
+
+      function moveStop(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= stops.length) return;
+        const temp = stops[index];
+        stops[index] = stops[newIndex];
+        stops[newIndex] = temp;
+        clearRouteLine();
+        saveAndRender();
+      }
+
+      function clearAllStops() {
+        if (stops.length === 0) return;
+        if (confirm("¿Borrar todas las paradas de la lista actual?")) {
+          stops = [];
+          clearRouteLine();
+          document.getElementById("summary-bar").style.display = "none";
+          saveAndRender();
+        }
+      }
+
+      function clearRouteLine() {
+        if (routeLine) {
+          map.removeLayer(routeLine);
+          routeLine = null;
+        }
+      }
+
+      function fitMapToStops() {
+        const points = stops.map((s) => [s.lat, s.lng]);
+        if (userCoords) points.push(userCoords);
+        if (points.length > 0) {
+          map.fitBounds(points, { padding: [30, 30] });
+        }
+      }
+
+      // Función auxiliar para calcular distancia cuadrada entre dos coordenadas
+      function sqDist(lat1, lng1, lat2, lng2) {
+        const dLat = lat1 - lat2;
+        const dLng = lng1 - lng2;
+        return dLat * dLat + dLng * dLng;
+      }
+
+      // ==========================================
+      // OPTIMIZADOR DE RUTA CORREGIDO
+      // ==========================================
+      async function optimizeRoute() {
+        if (stops.length < 2) {
+          alert("Añade al menos 2 paradas para ordenar la ruta.");
+          return;
+        }
+
+        const btn = document.getElementById("btn-optimize");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ Calculando mejor ruta...";
+        btn.disabled = true;
+
+        const useGps = document.getElementById("start-from-gps").checked && userCoords !== null;
+        const roundtrip = document.getElementById("roundtrip").checked;
+        const manualStartIdx = stops.findIndex((s) => s.isStart);
+
+        try {
+          let allPoints = [];
+
+          if (useGps) {
+            allPoints.push({ lat: userCoords[0], lng: userCoords[1], isGps: true });
+            stops.forEach((s) => allPoints.push(s));
+          } else if (manualStartIdx !== -1) {
+            // Ponemos la parada marcada como salida la primera
+            allPoints.push(stops[manualStartIdx]);
+            stops.forEach((s, i) => {
+              if (i !== manualStartIdx) allPoints.push(s);
+            });
+          } else {
+            stops.forEach((s) => allPoints.push(s));
+          }
+
+          const coordString = allPoints.map((p) => `${p.lng},${p.lat}`).join(";");
+          const hasFixedOrigin = useGps || manualStartIdx !== -1;
+
+          let params = `overview=full&geometries=geojson&roundtrip=${roundtrip}`;
+          if (hasFixedOrigin) {
+            params += `&source=first`;
+            if (!roundtrip) params += `&destination=any`;
+          } else if (!roundtrip) {
+            // Sin origen fijo, OSRM elige el mejor punto de inicio y fin automáticamente
+            params += `&source=any&destination=any`;
+          }
+
+          const url = `https://router.project-osrm.org/trip/v1/driving/${coordString}?${params}`;
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (data.code !== "Ok" || !data.trips || data.trips.length === 0) {
+            throw new Error("No se pudo calcular la ruta entre esos puntos.");
+          }
+
+          const trip = data.trips[0];
+          const routeCoords = trip.geometry.coordinates; // Array de [lng, lat] del trazado real
+
+          // ORDENACIÓN REAL SIGUIENDO LA LÍNEA DE LA RUTA:
+          // Buscamos en qué posición de la polilínea (índice del vértice más cercano) pasa la ruta por cada parada
+          const deliveryStops = allPoints.filter((p) => !p.isGps);
+
+          // Si es ruta circular y hay origen fijo, ignoramos los últimos vértices de vuelta al inicio para no confundir el orden
+          const searchLimit = roundtrip ? Math.floor(routeCoords.length * 0.92) : routeCoords.length;
+
+          const stopsWithRoutePos = deliveryStops.map((stop) => {
+            let bestIdx = 0;
+            let minD = Infinity;
+            for (let i = 0; i < searchLimit; i++) {
+              const d = sqDist(stop.lat, stop.lng, routeCoords[i][1], routeCoords[i][0]);
+              if (d < minD) {
+                minD = d;
+                bestIdx = i;
+              }
+            }
+            return { stop, routePos: bestIdx };
+          });
+
+          // Ordenamos de menor a mayor índice en la línea de ruta
+          stopsWithRoutePos.sort((a, b) => a.routePos - b.routePos);
+
+          // Si había salida manual fijada, nos aseguramos de que siga siendo la #1
+          let finalOrdered = stopsWithRoutePos.map((item) => item.stop);
+          if (!useGps && manualStartIdx !== -1) {
+            const startItem = finalOrdered.find((s) => s.isStart);
+            if (startItem) {
+              finalOrdered = [startItem, ...finalOrdered.filter((s) => !s.isStart)];
+            }
+          }
+
+          stops = finalOrdered;
+
+          // Dibujar línea de ruta en el mapa
+          clearRouteLine();
+          const latLngs = routeCoords.map((c) => [c[1], c[0]]);
+          routeLine = L.polyline(latLngs, { color: "#3b82f6", weight: 5, opacity: 0.85 }).addTo(map);
+          map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+
+          // Mostrar resumen km y tiempo
+          const km = (trip.distance / 1000).toFixed(1);
+          const mins = Math.round(trip.duration / 60);
+          const hours = Math.floor(mins / 60);
+          const remMins = mins % 60;
+          const timeStr = hours > 0 ? `${hours}h ${remMins}m` : `${mins} min`;
+
+          document.getElementById("total-dist").textContent = `${km} km`;
+          document.getElementById("total-time").textContent = timeStr;
+          document.getElementById("summary-bar").style.display = "flex";
+
+          saveAndRender();
+        } catch (err) {
+          alert("Error al optimizar: " + err.message);
+        } finally {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      }
+
+      function saveAndRender() {
+        localStorage.setItem("reparto_stops", JSON.stringify(stops));
+        document.getElementById("stop-count").textContent = stops.length;
+        document.getElementById("saved-count").textContent = savedClients.length;
+
+        markersLayer.clearLayers();
+        stops.forEach((s, idx) => {
+          const icon = L.divIcon({
+            className: `custom-pin ${s.isStart ? "start-pin" : ""}`,
+            html: `${idx + 1}`,
+            iconSize: [26, 26],
+            iconAnchor: [13, 13],
+          });
+          L.marker([s.lat, s.lng], { icon })
+            .addTo(markersLayer)
+            .bindPopup(`<strong>#${idx + 1}</strong> ${s.name}`);
+        });
+
+        const listEl = document.getElementById("stop-list");
+        listEl.innerHTML = "";
+
+        stops.forEach((s, idx) => {
+          const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving`;
+
+          const card = document.createElement("div");
+          card.className = `stop-card ${s.done ? "done" : ""} ${s.isStart ? "is-start" : ""}`;
+          card.innerHTML = `
+        <div class="stop-header">
+          <div class="stop-num">${idx + 1}</div>
+          <div class="stop-info">
+            <div class="stop-title">${s.name} ${s.isStart ? '<span style="color:var(--warning);font-size:0.75rem;">(SALIDA)</span>' : ""}</div>
+            <div class="stop-coords">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</div>
+          </div>
+          <button class="btn-sm btn-icon" title="Fijar como punto de salida" onclick="setAsStart(${idx})">🚩</button>
+          <button class="btn-sm btn-icon" title="Guardar en clientes habituales" onclick="saveClient(${idx})">⭐</button>
+        </div>
+        <div class="stop-actions">
+          <a href="${gmapsUrl}" target="_blank" class="btn-sm btn-nav">🧭 Ir (Maps)</a>
+          <button class="btn-sm ${s.done ? "btn-secondary" : "btn-primary"}" onclick="toggleDone(${idx})">
+            ${s.done ? "↩️ Deshacer" : "✓ Entregado"}
+          </button>
+          <button class="btn-sm btn-icon" onclick="moveStop(${idx}, -1)">↑</button>
+          <button class="btn-sm btn-icon" onclick="moveStop(${idx}, 1)">↓</button>
+          <button class="btn-sm btn-danger" onclick="removeStop(${idx})">✕</button>
+        </div>
+      `;
+          listEl.appendChild(card);
+        });
+      }
+
+      function saveClient(index) {
+        const s = stops[index];
+        const customName = prompt("Guardar cliente habitual como:", s.name);
+        if (!customName) return;
+        savedClients.push({ name: customName.trim(), lat: s.lat, lng: s.lng });
+        localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
+        document.getElementById("saved-count").textContent = savedClients.length;
+        alert("Cliente guardado en tu lista ⭐");
+      }
+
+      function openSavedModal() {
+        renderSavedList();
+        document.getElementById("saved-modal").style.display = "block";
+      }
+
+      function closeSavedModal() {
+        document.getElementById("saved-modal").style.display = "none";
+      }
+
+      function renderSavedList() {
+        const container = document.getElementById("saved-list");
+        container.innerHTML = "";
+        if (savedClients.length === 0) {
+          container.innerHTML =
+            '<p style="color: var(--muted); font-size: 0.9rem;">Aún no tienes clientes guardados. Pulsa la ⭐ en cualquier parada para guardarla.</p>';
+          return;
+        }
+        savedClients.forEach((c, idx) => {
+          const div = document.createElement("div");
+          div.className = "saved-item";
+          div.innerHTML = `
+        <div style="flex:1; font-size: 0.9rem;"><strong>${c.name}</strong></div>
+        <button class="btn-sm btn-success" onclick="addSavedToRoute(${idx})">+ Ruta</button>
+        <button class="btn-sm btn-danger" onclick="deleteSaved(${idx})">✕</button>
+      `;
+          container.appendChild(div);
+        });
+      }
+
+      function addSavedToRoute(idx) {
+        const c = savedClients[idx];
+        addStop(c.name, c.lat, c.lng);
+        closeSavedModal();
+      }
+
+      function deleteSaved(idx) {
+        savedClients.splice(idx, 1);
+        localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
+        renderSavedList();
+        document.getElementById("saved-count").textContent = savedClients.length;
+      }
+
+      function exportBackup() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedClients, null, 2));
+        const a = document.createElement("a");
+        a.href = dataStr;
+        a.download = `clientes_reparto_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+      }
+
+      function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const imported = JSON.parse(e.target.result);
+            if (Array.isArray(imported)) {
+              savedClients = imported;
+              localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
+              renderSavedList();
+              document.getElementById("saved-count").textContent = savedClients.length;
+              alert("Copia restaurada correctamente.");
+            }
+          } catch (err) {
+            alert("Archivo de copia no válido.");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      locateUser(true);
+      saveAndRender();
+    </script>
+  </body>
+</html>
