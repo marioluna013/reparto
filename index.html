@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#0f172a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>RutaReparto Pro - Alicante & Murcia</title>
+    <title>RutaReparto</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -35,60 +35,53 @@
       body {
         background: var(--bg);
         color: var(--text);
-        padding-bottom: 80px;
-      }
-
-      header {
-        background: #020617;
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-      }
-      header h1 {
-        font-size: 1.1rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      header span.badge {
-        font-size: 0.7rem;
-        background: var(--primary);
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding-bottom: 70px;
       }
 
       .container {
         max-width: 800px;
         margin: 0 auto;
-        padding: 12px;
+        padding: 8px 10px;
       }
 
+      /* Buscador + Botón Clientes compacto en la misma fila */
       .search-box {
         position: relative;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
       }
       .search-input-wrap {
         display: flex;
         gap: 6px;
+        align-items: center;
       }
       input[type="text"] {
-        width: 100%;
-        padding: 12px;
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
         border-radius: 8px;
         border: 1px solid var(--border);
         background: var(--card);
         color: var(--text);
-        font-size: 1rem;
+        font-size: 0.95rem;
         outline: none;
       }
       input[type="text"]:focus {
         border-color: var(--primary);
+      }
+
+      .btn-top-compact {
+        padding: 10px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
       }
 
       #search-results {
@@ -125,18 +118,24 @@
         margin-top: 2px;
       }
 
+      /* Mapa ampliado */
       .map-wrapper {
         position: relative;
         border-radius: 10px;
         overflow: hidden;
         border: 1px solid var(--border);
-        margin-bottom: 12px;
+        margin-bottom: 8px;
       }
       #map {
-        height: 280px;
+        height: 420px;
         width: 100%;
         z-index: 1;
+        transition: height 0.25s ease;
       }
+      #map.expanded {
+        height: 75vh;
+      }
+
       .map-controls {
         position: absolute;
         top: 10px;
@@ -160,19 +159,35 @@
       .map-hint {
         background: rgba(2, 6, 23, 0.85);
         color: var(--muted);
-        font-size: 0.75rem;
-        padding: 6px 10px;
+        font-size: 0.72rem;
+        padding: 5px 8px;
         text-align: center;
       }
 
+      /* Opción GPS compacta */
+      .route-options {
+        background: var(--card);
+        padding: 7px 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+      }
+      .route-options label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      /* Botones principales */
       .actions-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
-        margin-bottom: 14px;
+        margin-bottom: 10px;
       }
       .btn {
-        padding: 12px;
+        padding: 11px;
         border: none;
         border-radius: 8px;
         font-weight: 700;
@@ -208,37 +223,20 @@
         grid-column: span 2;
       }
 
-      .route-options {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: var(--card);
-        padding: 8px 12px;
-        border-radius: 8px;
-        margin-bottom: 12px;
-        font-size: 0.85rem;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-      .route-options label {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-      }
-
+      /* Resumen */
       .summary-bar {
         background: #172554;
         border: 1px solid #1d4ed8;
-        padding: 10px 14px;
+        padding: 8px 12px;
         border-radius: 8px;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
-        font-size: 0.9rem;
+        font-size: 0.88rem;
         font-weight: 600;
       }
 
+      /* Lista de paradas */
       .stop-list {
         display: flex;
         flex-direction: column;
@@ -248,7 +246,7 @@
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 10px;
-        padding: 12px;
+        padding: 10px 12px;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -269,14 +267,14 @@
       .stop-num {
         background: var(--primary);
         color: white;
-        min-width: 28px;
-        height: 28px;
+        min-width: 26px;
+        height: 26px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         margin-top: 2px;
       }
       .stop-card.done .stop-num {
@@ -291,11 +289,11 @@
       }
       .stop-title {
         font-weight: 700;
-        font-size: 0.98rem;
+        font-size: 0.95rem;
         line-height: 1.3;
       }
       .stop-coords {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         color: var(--muted);
         margin-top: 2px;
       }
@@ -331,6 +329,7 @@
         padding: 7px 10px;
       }
 
+      /* Modal Clientes Guardados */
       .modal {
         display: none;
         position: fixed;
@@ -399,44 +398,37 @@
     </style>
   </head>
   <body>
-    <header>
-      <h1>🚚 RutaReparto <span class="badge">ALC + MUR</span></h1>
-      <button class="btn-sm btn-secondary" onclick="openSavedModal()">⭐ Clientes (<span id="saved-count">0</span>)</button>
-    </header>
-
     <div class="container">
+      <!-- Buscador + Botón compacto de Clientes -->
       <div class="search-box">
         <div class="search-input-wrap">
-          <input
-            type="text"
-            id="search-input"
-            placeholder="Buscar calle, polígono o pegar coordenadas (38.29, -0.60)..."
-            autocomplete="off" />
-          <button class="btn btn-secondary" onclick="clearSearch()" style="padding: 0 12px">✕</button>
+          <input type="text" id="search-input" placeholder="Buscar calle, polígono o pegar coords..." autocomplete="off" />
+          <button class="btn-top-compact" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+          <button class="btn-top-compact" onclick="openSavedModal()">⭐ <span id="saved-count">0</span></button>
         </div>
         <div id="search-results"></div>
       </div>
 
+      <!-- Mapa ampliado con botón de pantalla grande -->
       <div class="map-wrapper">
         <div id="map"></div>
         <div class="map-controls">
+          <button class="map-btn" onclick="toggleMapSize()" id="size-btn">⛶ Ampliar</button>
           <button class="map-btn" onclick="toggleMapLayer()" id="layer-btn">🛰️ Satélite</button>
           <button class="map-btn" onclick="locateUser(true)">📍 Mi GPS</button>
         </div>
-        <div class="map-hint">💡 Toca directamente en cualquier punto del mapa para añadir una parada</div>
+        <div class="map-hint">💡 Toca directamente en el mapa para añadir parada</div>
       </div>
 
+      <!-- Única opción de salida desde GPS -->
       <div class="route-options">
         <label>
           <input type="checkbox" id="start-from-gps" checked />
           Salir desde mi GPS (si está activo)
         </label>
-        <label>
-          <input type="checkbox" id="roundtrip" />
-          Volver al inicio
-        </label>
       </div>
 
+      <!-- Botones de acción -->
       <div class="actions-grid">
         <button class="btn btn-primary btn-full" onclick="optimizeRoute()" id="btn-optimize">
           ⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">0</span>)
@@ -445,18 +437,21 @@
         <button class="btn btn-secondary" onclick="fitMapToStops()">🔍 Ver todas</button>
       </div>
 
+      <!-- Resumen -->
       <div class="summary-bar" id="summary-bar" style="display: none">
         <span>🏁 Distancia: <strong id="total-dist">0 km</strong></span>
         <span>⏱️ Conducción: <strong id="total-time">0 min</strong></span>
       </div>
 
+      <!-- Lista de paradas -->
       <div class="stop-list" id="stop-list"></div>
     </div>
 
+    <!-- Modal Clientes Guardados -->
     <div class="modal" id="saved-modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>⭐ Clientes / Sitios Guardados</h3>
+          <h3>⭐ Clientes Guardados</h3>
           <button class="btn-sm btn-danger" onclick="closeSavedModal()">Cerrar</button>
         </div>
         <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 12px">
@@ -504,6 +499,17 @@
       let routeLine = null;
       let gpsMarker = null;
 
+      function toggleMapSize() {
+        const mapEl = document.getElementById("map");
+        const btn = document.getElementById("size-btn");
+        mapEl.classList.toggle("expanded");
+        const isExpanded = mapEl.classList.contains("expanded");
+        btn.textContent = isExpanded ? "🗕 Reducir" : "⛶ Ampliar";
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 260);
+      }
+
       function toggleMapLayer() {
         const btn = document.getElementById("layer-btn");
         if (isSatellite) {
@@ -545,9 +551,6 @@
         }
       });
 
-      // ==========================================
-      // DETECTOR DE COORDENADAS DE GOOGLE MAPS + BUSCADOR
-      // ==========================================
       const searchInput = document.getElementById("search-input");
       const searchResults = document.getElementById("search-results");
       let searchTimeout = null;
@@ -573,7 +576,6 @@
           return;
         }
 
-        // Si son coordenadas pegadas de Google Maps, mostrar opción inmediata sin esperar
         const coords = parseGoogleCoords(query);
         if (coords) {
           searchResults.innerHTML = "";
@@ -612,7 +614,7 @@
           searchResults.innerHTML = "";
           if (!data.features || data.features.length === 0) {
             searchResults.innerHTML =
-              '<div class="result-item">Sin resultados en Alicante/Murcia. Prueba tocando en el mapa o pegando coordenadas de Google Maps.</div>';
+              '<div class="result-item">Sin resultados en Alicante/Murcia. Toca en el mapa o pega coordenadas de Google Maps.</div>';
             searchResults.style.display = "block";
             return;
           }
@@ -708,7 +710,7 @@
       }
 
       // ==========================================
-      // OPTIMIZADOR DE RUTA BLINDADO
+      // OPTIMIZADOR DE RUTA BLINDADO (RUTA ABIERTA)
       // ==========================================
       async function optimizeRoute() {
         if (stops.length < 2) {
@@ -721,7 +723,6 @@
         btn.textContent = "⏳ Calculando mejor ruta...";
 
         const useGps = document.getElementById("start-from-gps").checked && userCoords !== null;
-        const roundtrip = document.getElementById("roundtrip").checked;
         const manualStartIdx = stops.findIndex((s) => s.isStart);
 
         try {
@@ -759,9 +760,6 @@
             let cost = 0;
             for (let i = 0; i < order.length - 1; i++) {
               cost += durations[order[i]][order[i + 1]] || 999999;
-            }
-            if (roundtrip) {
-              cost += durations[order[order.length - 1]][order[0]] || 999999;
             }
             return cost;
           }
@@ -824,10 +822,7 @@
           const orderedPoints = bestOrder.map((idx) => points[idx]);
           stops = orderedPoints.filter((p) => !p.isGps);
 
-          let routePoints = [...orderedPoints];
-          if (roundtrip) routePoints.push(orderedPoints[0]);
-
-          const routeCoordStr = routePoints.map((p) => `${p.lng},${p.lat}`).join(";");
+          const routeCoordStr = orderedPoints.map((p) => `${p.lng},${p.lat}`).join(";");
           const routeUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordStr}?overview=full&geometries=geojson`;
           const routeRes = await fetch(routeUrl);
           const routeData = await routeRes.json();
