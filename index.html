@@ -129,7 +129,7 @@
         margin-top: 2px;
       }
 
-      /* Mapa ampliado */
+      /* Mapa ampliado sin texto inferior */
       .map-wrapper {
         position: relative;
         border-radius: 10px;
@@ -138,13 +138,13 @@
         margin-bottom: 8px;
       }
       #map {
-        height: 420px;
+        height: 440px;
         width: 100%;
         z-index: 1;
         transition: height 0.25s ease;
       }
       #map.expanded {
-        height: 75vh;
+        height: 78vh;
       }
 
       .map-controls {
@@ -166,13 +166,6 @@
         font-weight: 600;
         cursor: pointer;
         backdrop-filter: blur(4px);
-      }
-      .map-hint {
-        background: rgba(2, 6, 23, 0.85);
-        color: var(--muted);
-        font-size: 0.72rem;
-        padding: 5px 8px;
-        text-align: center;
       }
 
       /* Panel compacto de salida y tiempos */
@@ -493,7 +486,7 @@
         <div id="search-results"></div>
       </div>
 
-      <!-- Mapa ampliado con botón de pantalla grande -->
+      <!-- Mapa ampliado limpio -->
       <div class="map-wrapper">
         <div id="map"></div>
         <div class="map-controls">
@@ -501,7 +494,6 @@
           <button class="map-btn" onclick="toggleMapLayer()" id="layer-btn">🛰️ Satélite</button>
           <button class="map-btn" onclick="locateUser(true)">📍 Mi GPS</button>
         </div>
-        <div class="map-hint">💡 Toca en el mapa para añadir parada · Usa 🕒 en cada parada para horarios y tiempo</div>
       </div>
 
       <!-- Opciones de salida y tiempos (10 min por defecto) -->
