@@ -484,7 +484,6 @@
       let savedClients = JSON.parse(localStorage.getItem("reparto_saved") || "[]");
       let userCoords = null;
       let isSatellite = false;
-      let fixedStartIndex = null; // Permite fijar manualmente qué parada es la salida si no hay GPS
 
       const map = L.map("map").setView(CENTER_DEFAULT, 9);
 
@@ -615,7 +614,6 @@
 
       function setAsStart(index) {
         stops.forEach((s, i) => (s.isStart = i === index ? !s.isStart : false));
-        // Si marca una salida manual, desmarcamos salir desde GPS para evitar conflictos
         if (stops[index].isStart) {
           document.getElementById("start-from-gps").checked = false;
         }
@@ -668,15 +666,8 @@
         }
       }
 
-      // Función auxiliar para calcular distancia cuadrada entre dos coordenadas
-      function sqDist(lat1, lng1, lat2, lng2) {
-        const dLat = lat1 - lat2;
-        const dLng = lng1 - lng2;
-        return dLat * dLat + dLng * dLng;
-      }
-
       // ==========================================
-      // OPTIMIZADOR DE RUTA CORREGIDO
+      // OPTIMIZADOR DE RUTA BLINDADO (MATRIZ DE TIEMPOS + RUTA REAL)
       // ==========================================
       async function optimizeRoute() {
         if (stops.length < 2) {
@@ -685,117 +676,167 @@
         }
 
         const btn = document.getElementById("btn-optimize");
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "⏳ Calculando mejor ruta...";
         btn.disabled = true;
+        btn.textContent = "⏳ Calculando mejor ruta...";
 
         const useGps = document.getElementById("start-from-gps").checked && userCoords !== null;
         const roundtrip = document.getElementById("roundtrip").checked;
         const manualStartIdx = stops.findIndex((s) => s.isStart);
 
         try {
-          let allPoints = [];
+          // 1. Preparamos los puntos: índice 0 será el origen si existe
+          let points = [];
+          let hasFixedOrigin = false;
 
           if (useGps) {
-            allPoints.push({ lat: userCoords[0], lng: userCoords[1], isGps: true });
-            stops.forEach((s) => allPoints.push(s));
+            points.push({ lat: userCoords[0], lng: userCoords[1], isGps: true });
+            stops.forEach((s) => points.push(s));
+            hasFixedOrigin = true;
           } else if (manualStartIdx !== -1) {
-            // Ponemos la parada marcada como salida la primera
-            allPoints.push(stops[manualStartIdx]);
+            points.push(stops[manualStartIdx]);
             stops.forEach((s, i) => {
-              if (i !== manualStartIdx) allPoints.push(s);
+              if (i !== manualStartIdx) points.push(s);
             });
+            hasFixedOrigin = true;
           } else {
-            stops.forEach((s) => allPoints.push(s));
+            stops.forEach((s) => points.push(s));
           }
 
-          const coordString = allPoints.map((p) => `${p.lng},${p.lat}`).join(";");
-          const hasFixedOrigin = useGps || manualStartIdx !== -1;
+          const coordString = points.map((p) => `${p.lng},${p.lat}`).join(";");
 
-          let params = `overview=full&geometries=geojson&roundtrip=${roundtrip}`;
-          if (hasFixedOrigin) {
-            params += `&source=first`;
-            if (!roundtrip) params += `&destination=any`;
-          } else if (!roundtrip) {
-            // Sin origen fijo, OSRM elige el mejor punto de inicio y fin automáticamente
-            params += `&source=any&destination=any`;
+          // 2. Pedimos la matriz de tiempos reales por carretera entre todos los puntos
+          const tableUrl = `https://router.project-osrm.org/table/v1/driving/${coordString}`;
+          const tableRes = await fetch(tableUrl);
+          const tableData = await tableRes.json();
+
+          if (tableData.code !== "Ok" || !tableData.durations) {
+            throw new Error("No se pudo calcular la matriz de distancias.");
           }
 
-          const url = `https://router.project-osrm.org/trip/v1/driving/${coordString}?${params}`;
-          const res = await fetch(url);
-          const data = await res.json();
+          const durations = tableData.durations; // Matriz NxN en segundos
+          const n = points.length;
 
-          if (data.code !== "Ok" || !data.trips || data.trips.length === 0) {
-            throw new Error("No se pudo calcular la ruta entre esos puntos.");
+          // Función para calcular el tiempo total de una secuencia de índices
+          function calcTourCost(order) {
+            let cost = 0;
+            for (let i = 0; i < order.length - 1; i++) {
+              cost += durations[order[i]][order[i + 1]] || 999999;
+            }
+            if (roundtrip) {
+              cost += durations[order[order.length - 1]][order[0]] || 999999;
+            }
+            return cost;
           }
 
-          const trip = data.trips[0];
-          const routeCoords = trip.geometry.coordinates; // Array de [lng, lat] del trazado real
+          // Algoritmo Vecino Más Cercano + Optimización 2-Opt
+          function solveFromStart(startIdx) {
+            let visited = new Array(n).fill(false);
+            let order = [startIdx];
+            visited[startIdx] = true;
 
-          // ORDENACIÓN REAL SIGUIENDO LA LÍNEA DE LA RUTA:
-          // Buscamos en qué posición de la polilínea (índice del vértice más cercano) pasa la ruta por cada parada
-          const deliveryStops = allPoints.filter((p) => !p.isGps);
-
-          // Si es ruta circular y hay origen fijo, ignoramos los últimos vértices de vuelta al inicio para no confundir el orden
-          const searchLimit = roundtrip ? Math.floor(routeCoords.length * 0.92) : routeCoords.length;
-
-          const stopsWithRoutePos = deliveryStops.map((stop) => {
-            let bestIdx = 0;
-            let minD = Infinity;
-            for (let i = 0; i < searchLimit; i++) {
-              const d = sqDist(stop.lat, stop.lng, routeCoords[i][1], routeCoords[i][0]);
-              if (d < minD) {
-                minD = d;
-                bestIdx = i;
+            for (let step = 1; step < n; step++) {
+              let last = order[order.length - 1];
+              let bestNext = -1;
+              let bestTime = Infinity;
+              for (let candidate = 0; candidate < n; candidate++) {
+                if (!visited[candidate]) {
+                  let t = durations[last][candidate];
+                  if (t !== null && t < bestTime) {
+                    bestTime = t;
+                    bestNext = candidate;
+                  }
+                }
+              }
+              if (bestNext !== -1) {
+                visited[bestNext] = true;
+                order.push(bestNext);
               }
             }
-            return { stop, routePos: bestIdx };
-          });
 
-          // Ordenamos de menor a mayor índice en la línea de ruta
-          stopsWithRoutePos.sort((a, b) => a.routePos - b.routePos);
+            // Mejora local 2-Opt para eliminar cruces de ruta
+            let improved = true;
+            while (improved) {
+              improved = false;
+              for (let i = 1; i < order.length - 1; i++) {
+                for (let k = i + 1; k < order.length; k++) {
+                  let newOrder = [...order.slice(0, i), ...order.slice(i, k + 1).reverse(), ...order.slice(k + 1)];
+                  if (calcTourCost(newOrder) < calcTourCost(order) - 0.1) {
+                    order = newOrder;
+                    improved = true;
+                  }
+                }
+              }
+            }
+            return order;
+          }
 
-          // Si había salida manual fijada, nos aseguramos de que siga siendo la #1
-          let finalOrdered = stopsWithRoutePos.map((item) => item.stop);
-          if (!useGps && manualStartIdx !== -1) {
-            const startItem = finalOrdered.find((s) => s.isStart);
-            if (startItem) {
-              finalOrdered = [startItem, ...finalOrdered.filter((s) => !s.isStart)];
+          let bestOrder = [];
+          if (hasFixedOrigin) {
+            bestOrder = solveFromStart(0);
+          } else {
+            // Probamos empezando desde cada parada y nos quedamos con la ruta más rápida
+            let minCost = Infinity;
+            for (let start = 0; start < n; start++) {
+              let candidateOrder = solveFromStart(start);
+              let c = calcTourCost(candidateOrder);
+              if (c < minCost) {
+                minCost = c;
+                bestOrder = candidateOrder;
+              }
             }
           }
 
-          stops = finalOrdered;
+          // 3. Reordenamos exactamente nuestra lista de paradas siguiendo bestOrder
+          const orderedPoints = bestOrder.map((idx) => points[idx]);
+          stops = orderedPoints.filter((p) => !p.isGps);
 
-          // Dibujar línea de ruta en el mapa
-          clearRouteLine();
-          const latLngs = routeCoords.map((c) => [c[1], c[0]]);
-          routeLine = L.polyline(latLngs, { color: "#3b82f6", weight: 5, opacity: 0.85 }).addTo(map);
-          map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+          // 4. Trazamos la ruta exacta siguiendo ese orden definitivo
+          let routePoints = [...orderedPoints];
+          if (roundtrip) routePoints.push(orderedPoints[0]);
 
-          // Mostrar resumen km y tiempo
-          const km = (trip.distance / 1000).toFixed(1);
-          const mins = Math.round(trip.duration / 60);
-          const hours = Math.floor(mins / 60);
-          const remMins = mins % 60;
-          const timeStr = hours > 0 ? `${hours}h ${remMins}m` : `${mins} min`;
+          const routeCoordStr = routePoints.map((p) => `${p.lng},${p.lat}`).join(";");
+          const routeUrl = `https://router.project-osrm.org/route/v1/driving/${routeCoordStr}?overview=full&geometries=geojson`;
+          const routeRes = await fetch(routeUrl);
+          const routeData = await routeRes.json();
 
-          document.getElementById("total-dist").textContent = `${km} km`;
-          document.getElementById("total-time").textContent = timeStr;
-          document.getElementById("summary-bar").style.display = "flex";
+          if (routeData.code === "Ok" && routeData.routes && routeData.routes.length > 0) {
+            const route = routeData.routes[0];
+            clearRouteLine();
+            const latLngs = route.geometry.coordinates.map((c) => [c[1], c[0]]);
+            routeLine = L.polyline(latLngs, { color: "#3b82f6", weight: 5, opacity: 0.85 }).addTo(map);
+            map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
 
-          saveAndRender();
+            const km = (route.distance / 1000).toFixed(1);
+            const mins = Math.round(route.duration / 60);
+            const hours = Math.floor(mins / 60);
+            const remMins = mins % 60;
+            const timeStr = hours > 0 ? `${hours}h ${remMins}m` : `${mins} min`;
+
+            const distEl = document.getElementById("total-dist");
+            const timeEl = document.getElementById("total-time");
+            const barEl = document.getElementById("summary-bar");
+            if (distEl) distEl.textContent = `${km} km`;
+            if (timeEl) timeEl.textContent = timeStr;
+            if (barEl) barEl.style.display = "flex";
+          }
         } catch (err) {
           alert("Error al optimizar: " + err.message);
         } finally {
-          btn.innerHTML = originalText;
+          // Restauramos el botón ANTES de llamar a saveAndRender()
+          btn.innerHTML = `⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">${stops.length}</span>)`;
           btn.disabled = false;
+          saveAndRender();
         }
       }
 
       function saveAndRender() {
         localStorage.setItem("reparto_stops", JSON.stringify(stops));
-        document.getElementById("stop-count").textContent = stops.length;
-        document.getElementById("saved-count").textContent = savedClients.length;
+
+        const stopCountEl = document.getElementById("stop-count");
+        if (stopCountEl) stopCountEl.textContent = stops.length;
+
+        const savedCountEl = document.getElementById("saved-count");
+        if (savedCountEl) savedCountEl.textContent = savedClients.length;
 
         markersLayer.clearLayers();
         stops.forEach((s, idx) => {
@@ -811,6 +852,7 @@
         });
 
         const listEl = document.getElementById("stop-list");
+        if (!listEl) return;
         listEl.innerHTML = "";
 
         stops.forEach((s, idx) => {
@@ -848,7 +890,7 @@
         if (!customName) return;
         savedClients.push({ name: customName.trim(), lat: s.lat, lng: s.lng });
         localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
-        document.getElementById("saved-count").textContent = savedClients.length;
+        saveAndRender();
         alert("Cliente guardado en tu lista ⭐");
       }
 
@@ -891,7 +933,7 @@
         savedClients.splice(idx, 1);
         localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
         renderSavedList();
-        document.getElementById("saved-count").textContent = savedClients.length;
+        saveAndRender();
       }
 
       function exportBackup() {
@@ -913,7 +955,7 @@
               savedClients = imported;
               localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
               renderSavedList();
-              document.getElementById("saved-count").textContent = savedClients.length;
+              saveAndRender();
               alert("Copia restaurada correctamente.");
             }
           } catch (err) {
