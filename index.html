@@ -1,1503 +1,1331 @@
+
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="robots" content="noindex, nofollow" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>RutaReparto</title>
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%232563eb'/%3E%3Cpath fill='%23fff' d='M112 160h208v144H112z'/%3E%3Cpath fill='%2393c5fd' d='M320 208h64l48 56v40H320z'/%3E%3Ccircle cx='176' cy='328' r='36' fill='%230f172a' stroke='%23fff' stroke-width='12'/%3E%3Ccircle cx='368' cy='328' r='36' fill='%230f172a' stroke='%23fff' stroke-width='12'/%3E%3C/svg%3E" />
-    <style>
-      :root {
-        --bg: #0f172a;
-        --card: #1e293b;
-        --card-hover: #334155;
-        --text: #f8fafc;
-        --muted: #94a3b8;
-        --primary: #3b82f6;
-        --primary-hover: #2563eb;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --border: #334155;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      }
-      body {
-        background: var(--bg);
-        color: var(--text);
-        padding-bottom: 70px;
-      }
-      .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 8px 10px;
-      }
-      .search-box {
-        position: relative;
-        margin-bottom: 8px;
-      }
-      .search-input-wrap {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-      }
-      input[type="text"],
-      input[type="time"],
-      input[type="number"] {
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        background: var(--card);
-        color: var(--text);
-        font-size: 0.95rem;
-        outline: none;
-      }
-      input[type="text"] {
-        flex: 1;
-        min-width: 0;
-      }
-      input:focus {
-        border-color: var(--primary);
-      }
-      .btn-top-compact {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        background: var(--card);
-        color: var(--text);
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      #search-results {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        margin-top: 4px;
-        max-height: 240px;
-        overflow-y: auto;
-        z-index: 1001;
-        box-shadow: 0 10px 25px #0008;
-        display: none;
-      }
-      .result-item {
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--border);
-        cursor: pointer;
-        font-size: 0.9rem;
-      }
-      .result-item:last-child {
-        border: 0;
-      }
-      .result-item:hover {
-        background: var(--card-hover);
-      }
-      .result-sub {
-        font-size: 0.75rem;
-        color: var(--muted);
-        display: block;
-        margin-top: 2px;
-      }
-      .map-wrapper {
-        position: relative;
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid var(--border);
-        margin-bottom: 8px;
-      }
-      #map {
-        height: 440px;
-        width: 100%;
-        transition: height 0.25s ease;
-      }
-      #map.expanded {
-        height: 78vh;
-      }
-      .map-controls {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 5;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .map-btn {
-        background: #0f172ae6;
-        color: white;
-        border: 1px solid var(--border);
-        padding: 8px 10px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        cursor: pointer;
-        backdrop-filter: blur(4px);
-      }
-      .route-options {
-        background: var(--card);
-        padding: 8px 10px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        font-size: 0.82rem;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-      .route-options label {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-      }
-      .time-settings {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-      .time-settings input {
-        padding: 4px 6px;
-        font-size: 0.82rem;
-        background: #0f172a;
-      }
-      .time-settings input[type="number"] {
-        width: 48px;
-        text-align: center;
-      }
-      .actions-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 10px;
-      }
-      .btn {
-        padding: 11px;
-        border: 0;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        color: white;
-      }
-      .btn-primary {
-        background: var(--primary);
-      }
-      .btn-success {
-        background: var(--success);
-      }
-      .btn-warning {
-        background: var(--warning);
-        color: #0f172a;
-      }
-      .btn-danger {
-        background: var(--danger);
-      }
-      .btn-secondary {
-        background: var(--card);
-        border: 1px solid var(--border);
-      }
-      .btn-full {
-        grid-column: span 2;
-      }
-      .summary-bar {
-        background: #172554;
-        border: 1px solid #1d4ed8;
-        padding: 8px 12px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
-        font-weight: 600;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      .stop-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .stop-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        transition:
-          transform 0.15s,
-          opacity 0.2s,
-          border-color 0.2s;
-        user-select: none;
-      }
-      .stop-card.done {
-        opacity: 0.5;
-        border-color: var(--success);
-      }
-      .stop-card.is-start {
-        border-color: var(--warning);
-      }
-      .stop-card.dragging {
-        opacity: 0.85;
-        border: 2px dashed var(--primary);
-        background: #273549;
-        transform: scale(1.01);
-        z-index: 50;
-      }
-      .stop-card.drag-over {
-        border-top: 3px solid var(--warning);
-      }
-      .stop-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-      }
-      .drag-handle {
-        color: var(--muted);
-        font-size: 1.2rem;
-        line-height: 1;
-        padding: 4px;
-        cursor: grab;
-        touch-action: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .stop-num {
-        background: var(--primary);
-        color: white;
-        min-width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.85rem;
-        margin-top: 2px;
-      }
-      .stop-card.done .stop-num {
-        background: var(--success);
-      }
-      .stop-card.is-start .stop-num {
-        background: var(--warning);
-        color: #0f172a;
-      }
-      .stop-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .stop-title {
-        font-weight: 700;
-        font-size: 0.95rem;
-        line-height: 1.3;
-        overflow-wrap: anywhere;
-      }
-      .stop-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 4px;
-        align-items: center;
-      }
-      .badge-time {
-        font-size: 0.74rem;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 600;
-        background: #334155;
-        color: #e2e8f0;
-      }
-      .badge-eta-ok {
-        background: #10b98133;
-        color: #34d399;
-        border: 1px solid #10b98166;
-      }
-      .badge-eta-wait {
-        background: #f59e0b33;
-        color: #fbbf24;
-        border: 1px solid #f59e0b66;
-      }
-      .badge-eta-late {
-        background: #ef444433;
-        color: #f87171;
-        border: 1px solid #ef444466;
-      }
-      .stop-actions {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        border-top: 1px solid var(--border);
-        padding-top: 8px;
-      }
-      .btn-sm {
-        padding: 7px 9px;
-        font-size: 0.82rem;
-        border-radius: 6px;
-        border: 0;
-        font-weight: 600;
-        cursor: pointer;
-        color: white;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .btn-nav {
-        background: var(--success);
-        flex: 1;
-        justify-content: center;
-        font-size: 0.9rem;
-      }
-      .btn-icon {
-        background: var(--card-hover);
-        padding: 7px 9px;
-      }
-      .modal {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: #000d;
-        z-index: 2000;
-        padding: 16px;
-        overflow-y: auto;
-      }
-      .modal-content {
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        max-width: 500px;
-        margin: 30px auto;
-        padding: 16px;
-      }
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .saved-search-wrap {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 12px;
-      }
-      .saved-search-wrap input {
-        width: 100%;
-        padding: 9px 12px;
-        font-size: 0.9rem;
-      }
-      .saved-item {
-        background: var(--card);
-        padding: 10px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-      }
-      .form-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 14px;
-      }
-      .form-group {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .form-group label {
-        font-size: 0.78rem;
-        color: var(--muted);
-      }
-      .form-group input {
-        width: 100%;
-        font-size: 0.95rem;
-        padding: 10px 8px;
-      }
-      .gm-stop-pin {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #2563eb;
-        color: #fff;
-        border: 2px solid #fff;
-        font-weight: 800;
-        font-size: 12px;
-        box-shadow: 0 2px 5px #0008;
-      }
-      .gm-stop-pin.start {
-        background: #f59e0b;
-        color: #0f172a;
-      }
-      .gm-gps-pin {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #10b981;
-        border: 2px solid #fff;
-        font-size: 16px;
-        box-shadow: 0 0 10px #10b981;
-      }
-      @media (max-width: 420px) {
-        .stop-header {
-          gap: 5px;
-        }
-        .btn-sm {
-          padding: 7px;
-        }
-        .form-row {
-          gap: 5px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="search-box">
-        <div class="search-input-wrap">
-          <input type="text" id="search-input" placeholder="Buscar negocio, calle o pegar coords..." autocomplete="off" />
-          <button class="btn-top-compact" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
-          <button class="btn-top-compact" onclick="openSavedModal()">⭐ <span id="saved-count">0</span></button>
-        </div>
-        <div id="search-results"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>RutaReparto</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%232563eb'/%3E%3Cpath fill='%23fff' d='M112 160h208v144H112z'/%3E%3Cpath fill='%2393c5fd' d='M320 208h64l48 56v40H320z'/%3E%3Ccircle cx='176' cy='328' r='36' fill='%230f172a' stroke='%23fff' stroke-width='12'/%3E%3Ccircle cx='368' cy='328' r='36' fill='%230f172a' stroke='%23fff' stroke-width='12'/%3E%3C/svg%3E" />
+
+  <style>
+    :root {
+      --bg:#0f172a;--card:#1e293b;--card-hover:#334155;--text:#f8fafc;
+      --muted:#94a3b8;--primary:#3b82f6;--primary-hover:#2563eb;
+      --success:#10b981;--warning:#f59e0b;--danger:#ef4444;--border:#334155;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+    body{background:var(--bg);color:var(--text);padding-bottom:70px}
+    .container{max-width:800px;margin:0 auto;padding:8px 10px}
+    .search-box{position:relative;margin-bottom:8px}
+    .search-input-wrap{display:flex;gap:6px;align-items:center}
+    input[type="text"],input[type="time"],input[type="number"]{padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.95rem;outline:none}
+    input[type="text"]{flex:1;min-width:0}
+    input:focus{border-color:var(--primary)}
+    .btn-top-compact{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px}
+    #search-results{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:240px;overflow-y:auto;z-index:1001;box-shadow:0 10px 25px #0008;display:none}
+    .result-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:.9rem}
+    .result-item:last-child{border:0}
+    .result-item:hover{background:var(--card-hover)}
+    .result-sub{font-size:.75rem;color:var(--muted);display:block;margin-top:2px}
+    .map-wrapper{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px}
+    #map{height:440px;width:100%;transition:height .25s ease}
+    #map.expanded{height:78vh}
+    .map-controls{position:absolute;top:10px;right:10px;z-index:5;display:flex;flex-direction:column;gap:6px}
+    .map-btn{background:#0f172ae6;color:white;border:1px solid var(--border);padding:8px 10px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;backdrop-filter:blur(4px)}
+    .route-options{background:var(--card);padding:8px 10px;border-radius:8px;margin-bottom:8px;font-size:.82rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+    .route-options label{display:flex;align-items:center;gap:6px;cursor:pointer}
+    .time-settings{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .time-settings input{padding:4px 6px;font-size:.82rem;background:#0f172a}
+    .time-settings input[type="number"]{width:48px;text-align:center}
+    .actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .btn{padding:11px;border:0;border-radius:8px;font-weight:700;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;color:white}
+    .btn-primary{background:var(--primary)}
+    .btn-success{background:var(--success)}
+    .btn-warning{background:var(--warning);color:#0f172a}
+    .btn-danger{background:var(--danger)}
+    .btn-secondary{background:var(--card);border:1px solid var(--border)}
+    .btn-full{grid-column:span 2}
+    .summary-bar{background:#172554;border:1px solid #1d4ed8;padding:8px 12px;border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;font-size:.85rem;font-weight:600;flex-wrap:wrap;gap:6px}
+    .stop-list{display:flex;flex-direction:column;gap:8px}
+    .stop-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:transform .15s,opacity .2s,border-color .2s;user-select:none}
+    .stop-card.done{opacity:.5;border-color:var(--success)}
+    .stop-card.is-start{border-color:var(--warning)}
+    .stop-card.dragging{opacity:.85;border:2px dashed var(--primary);background:#273549;transform:scale(1.01);z-index:50}
+    .stop-card.drag-over{border-top:3px solid var(--warning)}
+    .stop-header{display:flex;align-items:flex-start;gap:8px}
+    .drag-handle{color:var(--muted);font-size:1.2rem;line-height:1;padding:4px;cursor:grab;touch-action:none;display:flex;align-items:center;justify-content:center}
+    .stop-num{background:var(--primary);color:white;min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;margin-top:2px}
+    .stop-card.done .stop-num{background:var(--success)}
+    .stop-card.is-start .stop-num{background:var(--warning);color:#0f172a}
+    .stop-info{flex:1;min-width:0}
+    .stop-title{font-weight:700;font-size:.95rem;line-height:1.3;overflow-wrap:anywhere}
+    .stop-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
+    .badge-time{font-size:.74rem;padding:2px 6px;border-radius:4px;font-weight:600;background:#334155;color:#e2e8f0}
+    .badge-eta-ok{background:#10b98133;color:#34d399;border:1px solid #10b98166}
+    .badge-eta-wait{background:#f59e0b33;color:#fbbf24;border:1px solid #f59e0b66}
+    .badge-eta-late{background:#ef444433;color:#f87171;border:1px solid #ef444466}
+    .stop-actions{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:8px}
+    .btn-sm{padding:7px 9px;font-size:.82rem;border-radius:6px;border:0;font-weight:600;cursor:pointer;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+    .btn-nav{background:var(--success);flex:1;justify-content:center;font-size:.9rem}
+    .btn-icon{background:var(--card-hover);padding:7px 9px}
+    .modal{display:none;position:fixed;inset:0;background:#000d;z-index:2000;padding:16px;overflow-y:auto}
+    .modal-content{background:var(--bg);border:1px solid var(--border);border-radius:12px;max-width:500px;margin:30px auto;padding:16px}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .saved-search-wrap{display:flex;gap:6px;margin-bottom:12px}
+    .saved-search-wrap input{width:100%;padding:9px 12px;font-size:.9rem}
+    .saved-item{background:var(--card);padding:10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .form-row{display:flex;gap:8px;margin-bottom:14px}
+    .form-group{flex:1;display:flex;flex-direction:column;gap:4px}
+    .form-group label{font-size:.78rem;color:var(--muted)}
+    .form-group input{width:100%;font-size:.95rem;padding:10px 8px}
+    .gm-stop-pin{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#2563eb;color:#fff;border:2px solid #fff;font-weight:800;font-size:12px;box-shadow:0 2px 5px #0008}
+    .gm-stop-pin.start{background:#f59e0b;color:#0f172a}
+    .gm-gps-pin{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#10b981;border:2px solid #fff;font-size:16px;box-shadow:0 0 10px #10b981}
+    @media(max-width:420px){.stop-header{gap:5px}.btn-sm{padding:7px}.form-row{gap:5px}}
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="search-box">
+      <div class="search-input-wrap">
+        <input type="text" id="search-input" placeholder="Buscar negocio, calle o pegar coords..." autocomplete="off" />
+        <button class="btn-top-compact" onclick="clearSearch()" title="Limpiar búsqueda">✕</button>
+        <button class="btn-top-compact" onclick="openSavedModal()">⭐ <span id="saved-count">0</span></button>
       </div>
-      <div class="map-wrapper">
-        <div id="map"></div>
-        <div class="map-controls">
-          <button class="map-btn" onclick="toggleMapSize()" id="size-btn">⛶ Ampliar</button>
-          <button class="map-btn" onclick="toggleMapLayer()" id="layer-btn">🛰️ Satélite</button>
-          <button class="map-btn" onclick="locateUser(true)">📍 Mi GPS</button>
-        </div>
-      </div>
-      <div class="route-options">
-        <label><input type="checkbox" id="start-from-gps" checked /> Salir desde GPS</label>
-        <div class="time-settings">
-          <span>Salida:</span><input type="time" id="departure-time" /><span title="Minutos estimados por cada descarga"
-            >Descarga:</span
-          ><input type="number" id="service-mins" value="10" min="0" max="120" /><span>m</span>
-        </div>
-      </div>
-      <div class="actions-grid">
-        <button class="btn btn-primary btn-full" onclick="optimizeRoute()" id="btn-optimize">
-          ⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">0</span>)
-        </button>
-        <button class="btn btn-warning btn-full" onclick="recalculateCurrentOrder()" id="btn-recalc" style="display: none">
-          🔄 Recalcular este orden manual
-        </button>
-        <button class="btn btn-secondary" onclick="clearAllStops()">🗑️ Limpiar lista</button>
-        <button class="btn btn-secondary" onclick="fitMapToStops()">🔍 Ver todas</button>
-      </div>
-      <div class="summary-bar" id="summary-bar" style="display: none">
-        <span>🏁 <strong id="total-dist">0 km</strong></span
-        ><span>⏱️ Conduc.: <strong id="total-time">0 min</strong></span
-        ><span>🏁 Fin est.: <strong id="end-time">--:--</strong></span>
-      </div>
-      <div class="stop-list" id="stop-list"></div>
+      <div id="search-results"></div>
     </div>
 
-    <div class="modal" id="time-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>🕒 Horario y tiempo de entrega</h3>
-          <button class="btn-sm btn-danger" onclick="closeTimeModal()">✕</button>
-        </div>
-        <p id="time-modal-title" style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px"></p>
-        <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 12px">
-          Rellena solo lo necesario. Si dejas "Descarga" vacío, usará el valor general (10 min).
-        </p>
-        <div class="form-row">
-          <div class="form-group"><label>Desde las:</label><input type="time" id="modal-time-from" /></div>
-          <div class="form-group"><label>Hasta las:</label><input type="time" id="modal-time-to" /></div>
-          <div class="form-group" style="max-width: 90px">
-            <label>Descarga (m):</label><input type="number" id="modal-service-mins" placeholder="10" min="0" max="180" />
-          </div>
-        </div>
-        <div style="display: flex; gap: 8px">
-          <button class="btn btn-primary" style="flex: 1" onclick="saveStopTime()">Guardar</button
-          ><button class="btn btn-secondary" onclick="clearStopTime()">Limpiar</button>
-        </div>
+    <div class="map-wrapper">
+      <div id="map"></div>
+      <div class="map-controls">
+        <button class="map-btn" onclick="toggleMapSize()" id="size-btn">⛶ Ampliar</button>
+        <button class="map-btn" onclick="toggleMapLayer()" id="layer-btn">🛰️ Satélite</button>
+        <button class="map-btn" onclick="locateUser(true)">📍 Mi GPS</button>
       </div>
     </div>
 
-    <div class="modal" id="saved-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>⭐ Clientes Guardados</h3>
-          <button class="btn-sm btn-danger" onclick="closeSavedModal()">Cerrar</button>
-        </div>
-        <div class="saved-search-wrap">
-          <input
-            type="text"
-            id="saved-search-input"
-            placeholder="🔍 Filtrar clientes por nombre o zona..."
-            oninput="renderSavedList()"
-            autocomplete="off" /><button
-            class="btn-sm btn-secondary"
-            onclick="
-              document.getElementById('saved-search-input').value = '';
-              renderSavedList();
-            ">
-            ✕
-          </button>
-        </div>
-        <div id="saved-list" style="margin-bottom: 16px; max-height: 55vh; overflow-y: auto"></div>
-        <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
-          <button class="btn-sm btn-primary" onclick="exportBackup()">💾 Exportar copia (.json)</button>
-          <label class="btn-sm btn-secondary" style="cursor: pointer"
-            >📂 Cargar copia<input type="file" accept=".json" onchange="importBackup(event)" style="display: none"
-          /></label>
-        </div>
+    <div class="route-options">
+      <label><input type="checkbox" id="start-from-gps" checked /> Salir desde GPS</label>
+      <div class="time-settings">
+        <span>Salida:</span><input type="time" id="departure-time" />
+        <span title="Minutos estimados por cada descarga">Descarga:</span>
+        <input type="number" id="service-mins" value="10" min="0" max="120" /><span>m</span>
       </div>
     </div>
 
-    <script>
-      /*
-  RUTAREPARTO + GOOGLE MAPS / PLACES NEW
-  Sustituye TU_CLAVE_API por tu clave en tu copia local.
-  No compartas la clave. Restringe la clave por HTTP referrer y por API en Google Cloud.
-*/
-      const GOOGLE_MAPS_API_KEY = "AIzaSyBWhw9aDdCDn8FhpzbeTvgKkXC9ZqHTmuo";
-      const BBOX = { west: -2.45, south: 37.35, east: 0.35, north: 38.95 };
-      const CENTER_DEFAULT = { lat: 38.15, lng: -0.85 };
-      let map, AdvancedMarkerElement, PinElement, placesLib;
-      let markersLayer = [];
-      let routeLine = null,
-        gpsMarker = null,
-        infoWindow = null;
-      let stops = JSON.parse(localStorage.getItem("reparto_stops") || "[]");
-      let savedClients = JSON.parse(localStorage.getItem("reparto_saved") || "[]");
-      let userCoords = null,
-        isSatellite = false,
-        editingTimeIndex = null,
-        needsManualRecalc = false;
-      let autocompleteSessionToken = null,
-        searchTimeout = null,
-        searchRequestId = 0;
-      const searchInput = document.getElementById("search-input");
-      const searchResults = document.getElementById("search-results");
+    <div class="actions-grid">
+      <button class="btn btn-primary btn-full" onclick="optimizeRoute()" id="btn-optimize">
+        ⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">0</span>)
+      </button>
+      <button class="btn btn-warning btn-full" onclick="recalculateCurrentOrder()" id="btn-recalc" style="display:none">
+        🔄 Recalcular este orden manual
+      </button>
+      <button class="btn btn-secondary" onclick="clearAllStops()">🗑️ Limpiar lista</button>
+      <button class="btn btn-secondary" onclick="fitMapToStops()">🔍 Ver todas</button>
+    </div>
 
-      function setNowDeparture() {
-        const n = new Date();
-        document.getElementById("departure-time").value =
-          `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
-      }
-      setNowDeparture();
+    <div class="summary-bar" id="summary-bar" style="display:none">
+      <span>🏁 <strong id="total-dist">0 km</strong></span>
+      <span>⏱️ Conduc.: <strong id="total-time">0 min</strong></span>
+      <span>🏁 Fin est.: <strong id="end-time">--:--</strong></span>
+    </div>
+    <div class="stop-list" id="stop-list"></div>
+  </div>
 
-      let googleMapsLoadPromise = null;
-      function loadGoogleMapsApi() {
-        // Cargador oficial de Google: define importLibrary antes de descargar la API.
-        // Así evitamos que initGoogleMaps intente usar una función que aún no existe.
-        if (googleMapsLoadPromise) return googleMapsLoadPromise;
-        googleMapsLoadPromise = new Promise((resolve, reject) => {
-          const googleRoot = (window.google = window.google || {});
-          const mapsRoot = (googleRoot.maps = googleRoot.maps || {});
+  <div class="modal" id="time-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🕒 Horario y tiempo de entrega</h3>
+        <button class="btn-sm btn-danger" onclick="closeTimeModal()">✕</button>
+      </div>
+      <p id="time-modal-title" style="font-size:.9rem;font-weight:600;margin-bottom:10px"></p>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
+        Rellena solo lo necesario. Si dejas "Descarga" vacío, usará el valor general (10 min).
+      </p>
+      <div class="form-row">
+        <div class="form-group"><label>Desde las:</label><input type="time" id="modal-time-from" /></div>
+        <div class="form-group"><label>Hasta las:</label><input type="time" id="modal-time-to" /></div>
+        <div class="form-group" style="max-width:90px">
+          <label>Descarga (m):</label><input type="number" id="modal-service-mins" placeholder="10" min="0" max="180" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="saveStopTime()">Guardar</button>
+        <button class="btn btn-secondary" onclick="clearStopTime()">Limpiar</button>
+      </div>
+    </div>
+  </div>
 
-          if (typeof mapsRoot.importLibrary === "function") {
-            Promise.all([mapsRoot.importLibrary("maps"), mapsRoot.importLibrary("marker"), mapsRoot.importLibrary("places")])
-              .then(([mapsLib, markerLib, placesLibrary]) => resolve({ maps: mapsLib, marker: markerLib, places: placesLibrary }))
-              .catch(reject);
-            return;
-          }
+  <div class="modal" id="saved-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>⭐ Clientes Guardados</h3>
+        <button class="btn-sm btn-danger" onclick="closeSavedModal()">Cerrar</button>
+      </div>
+      <div class="saved-search-wrap">
+        <input type="text" id="saved-search-input" placeholder="🔍 Filtrar clientes por nombre o zona..." oninput="renderSavedList()" autocomplete="off" />
+        <button class="btn-sm btn-secondary" onclick="document.getElementById('saved-search-input').value='';renderSavedList();">✕</button>
+      </div>
+      <div id="saved-list" style="margin-bottom:16px;max-height:55vh;overflow-y:auto"></div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm btn-primary" onclick="exportBackup()">💾 Exportar copia (.json)</button>
+        <label class="btn-sm btn-secondary" style="cursor:pointer">
+          📂 Cargar copia<input type="file" accept=".json" onchange="importBackup(event)" style="display:none" />
+        </label>
+      </div>
+    </div>
+  </div>
 
-          const requestedLibraries = new Set();
-          let scriptPromise;
-          const loadScript = () => {
-            if (scriptPromise) return scriptPromise;
-            scriptPromise = new Promise((scriptResolve, scriptReject) => {
-              const params = new URLSearchParams({
-                key: GOOGLE_MAPS_API_KEY,
-                v: "weekly",
-                loading: "async",
-                callback: "google.maps.__ib__",
-              });
-              const script = document.createElement("script");
-              mapsRoot.__ib__ = scriptResolve;
-              script.src = "https://maps.googleapis.com/maps/api/js?" + params.toString();
-              script.async = true;
-              script.onerror = () =>
-                scriptReject(
-                  new Error(
-                    "Google no ha podido descargar Maps JavaScript API. Revisa la conexión, Brave Shields y las restricciones de la clave.",
-                  ),
-                );
-              document.head.appendChild(script);
+  <script>
+    /*
+      RUTAREPARTO + GOOGLE MAPS / PLACES NEW + VALHALLA
+      Introduce tu clave de Google Maps en tu copia local.
+      No compartas la clave. Restringe por HTTP referrer y por API en Google Cloud.
+    */
+
+    const GOOGLE_MAPS_API_KEY = "AIzaSyBWhw9aDdCDn8FhpzbeTvgKkXC9ZqHTmuo";
+
+    // Motor de rutas Valhalla. Servidor público sujeto a uso razonable.
+    const VALHALLA_ROUTE_URL = "https://valhalla1.openstreetmap.de/route";
+
+    const BBOX = { west:-2.45, south:37.35, east:0.35, north:38.95 };
+    const CENTER_DEFAULT = { lat:38.15, lng:-0.85 };
+
+    let map, AdvancedMarkerElement, PinElement, placesLib;
+    let markersLayer = [];
+    let routeLine = null, gpsMarker = null, infoWindow = null;
+    let stops = JSON.parse(localStorage.getItem("reparto_stops") || "[]");
+    let savedClients = JSON.parse(localStorage.getItem("reparto_saved") || "[]");
+    let userCoords = null, isSatellite = false, editingTimeIndex = null, needsManualRecalc = false;
+    let autocompleteSessionToken = null, searchTimeout = null, searchRequestId = 0;
+
+    const searchInput = document.getElementById("search-input");
+    const searchResults = document.getElementById("search-results");
+
+    function setNowDeparture() {
+      const n = new Date();
+      document.getElementById("departure-time").value =
+        `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
+    }
+    setNowDeparture();
+
+    let googleMapsLoadPromise = null;
+
+    function loadGoogleMapsApi() {
+      if (googleMapsLoadPromise) return googleMapsLoadPromise;
+
+      googleMapsLoadPromise = new Promise((resolve,reject) => {
+        const googleRoot = window.google = window.google || {};
+        const mapsRoot = googleRoot.maps = googleRoot.maps || {};
+
+        if (typeof mapsRoot.importLibrary === "function") {
+          Promise.all([
+            mapsRoot.importLibrary("maps"),
+            mapsRoot.importLibrary("marker"),
+            mapsRoot.importLibrary("places")
+          ]).then(([mapsLib,markerLib,placesLibrary]) =>
+            resolve({maps:mapsLib,marker:markerLib,places:placesLibrary})
+          ).catch(reject);
+          return;
+        }
+
+        let scriptPromise;
+        const loadScript = () => {
+          if (scriptPromise) return scriptPromise;
+          scriptPromise = new Promise((scriptResolve,scriptReject) => {
+            const params = new URLSearchParams({
+              key:GOOGLE_MAPS_API_KEY,
+              v:"weekly",
+              loading:"async",
+              callback:"google.maps.__ib__"
             });
-            return scriptPromise;
-          };
-
-          mapsRoot.importLibrary = (libraryName, ...args) => {
-            requestedLibraries.add(libraryName);
-            return loadScript().then(() => mapsRoot.importLibrary(libraryName, ...args));
-          };
-
-          Promise.all(["maps", "marker", "places"].map((name) => mapsRoot.importLibrary(name)))
-            .then(([mapsLib, markerLib, placesLibrary]) => resolve({ maps: mapsLib, marker: markerLib, places: placesLibrary }))
-            .catch(reject);
-        });
-        return googleMapsLoadPromise;
-      }
-      async function initGoogleMaps() {
-        if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "TU_CLAVE_API") {
-          document.getElementById("map").innerHTML =
-            '<div style="padding:20px;color:#fff">Falta introducir la clave API de Google Maps en el código.</div>';
-          return;
-        }
-        try {
-          const libraries = await loadGoogleMapsApi();
-          const { Map } = libraries.maps;
-          const markerLib = libraries.marker;
-          placesLib = libraries.places;
-          AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
-          PinElement = markerLib.PinElement;
-          map = new Map(document.getElementById("map"), {
-            center: CENTER_DEFAULT,
-            zoom: 9,
-            mapId: "DEMO_MAP_ID",
-            mapTypeId: "roadmap",
-            streetViewControl: false,
-            mapTypeControl: false,
-            fullscreenControl: false,
-            gestureHandling: "greedy",
+            const script = document.createElement("script");
+            mapsRoot.__ib__ = scriptResolve;
+            script.src = "https://maps.googleapis.com/maps/api/js?" + params.toString();
+            script.async = true;
+            script.onerror = () => scriptReject(new Error(
+              "Google no ha podido descargar Maps JavaScript API. Revisa la conexión, Brave Shields y las restricciones de la clave."
+            ));
+            document.head.appendChild(script);
           });
-          infoWindow = new google.maps.InfoWindow();
-          map.addListener("click", (e) => {
-            if (!e.latLng) return;
-            const lat = Number(e.latLng.lat().toFixed(6)),
-              lng = Number(e.latLng.lng().toFixed(6));
-            const defaultName = `Punto mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-            const name = prompt("Nombre para esta parada (ej. Nave 4, Cliente...):", defaultName);
-            if (name !== null && name.trim()) addStop(name.trim(), lat, lng);
-          });
-          saveAndRender();
-          locateUser(true);
-        } catch (err) {
-          console.error("Google Maps:", err);
-          document.getElementById("map").innerHTML =
-            '<div style="padding:20px;color:#fff">No se pudo cargar Google Maps. Comprueba la clave, la facturación y las restricciones de la API. Consulta la consola del navegador para ver el error.</div>';
-        }
-      }
-      function makeMarkerContent(number, isStart = false) {
-        const el = document.createElement("div");
-        el.className = "gm-stop-pin" + (isStart ? " start" : "");
-        el.textContent = String(number);
-        return el;
-      }
-      function removeAllStopMarkers() {
-        markersLayer.forEach((m) => (m.map = null));
-        markersLayer = [];
-      }
-      function clearRouteLine() {
-        if (routeLine) {
-          routeLine.setMap(null);
-          routeLine = null;
-        }
-      }
-      function toggleMapSize() {
-        const el = document.getElementById("map"),
-          btn = document.getElementById("size-btn");
-        el.classList.toggle("expanded");
-        btn.textContent = el.classList.contains("expanded") ? "🗕 Reducir" : "⛶ Ampliar";
-        setTimeout(() => {
-          if (map) google.maps.event.trigger(map, "resize");
-        }, 280);
-      }
-      function toggleMapLayer() {
-        if (!map) return;
-        isSatellite = !isSatellite;
-        map.setMapTypeId(isSatellite ? "hybrid" : "roadmap");
-        document.getElementById("layer-btn").textContent = isSatellite ? "🗺️ Mapa" : "🛰️ Satélite";
-      }
-      function locateUser(centerMap = false) {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            userCoords = [pos.coords.latitude, pos.coords.longitude];
-            if (gpsMarker) gpsMarker.map = null;
-            const el = document.createElement("div");
-            el.className = "gm-gps-pin";
-            el.textContent = "🚚";
-            gpsMarker = new AdvancedMarkerElement({
-              map,
-              position: { lat: userCoords[0], lng: userCoords[1] },
-              content: el,
-              title: "Tu ubicación actual",
-            });
-            if (centerMap && map) (map.setCenter({ lat: userCoords[0], lng: userCoords[1] }), map.setZoom(15));
-          },
-          (err) => console.warn("Error GPS:", err),
-          { enableHighAccuracy: true, timeout: 8000 },
-        );
-      }
-      function parseGoogleCoords(text) {
-        const match = text.trim().match(/^(-?\d{1,2}[.,]\d+)\s*[,;\s]\s*(-?\d{1,3}[.,]\d+)$/);
-        if (!match) return null;
-        const lat = parseFloat(match[1].replace(",", ".")),
-          lng = parseFloat(match[2].replace(",", "."));
-        return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 ? { lat: +lat.toFixed(6), lng: +lng.toFixed(6) } : null;
-      }
-      searchInput.addEventListener("input", () => {
-        clearTimeout(searchTimeout);
-        const query = searchInput.value.trim();
-        const requestId = ++searchRequestId;
-        if (query.length < 3) {
-          searchResults.style.display = "none";
-          return;
-        }
-        const coords = parseGoogleCoords(query);
-        if (coords) {
-          searchResults.innerHTML = "";
-          const div = document.createElement("div");
-          div.className = "result-item";
-          const strong = document.createElement("strong");
-          strong.textContent = "📍 Añadir coordenadas de Google Maps";
-          const sub = document.createElement("span");
-          sub.className = "result-sub";
-          sub.textContent = `Lat: ${coords.lat}, Lng: ${coords.lng} (Toca para ponerle nombre)`;
-          div.append(strong, sub);
-          div.onclick = () => {
-            const name = prompt(
-              "Nombre del cliente o empresa para estas coordenadas:",
-              `Cliente (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`,
-            );
-            if (name && name.trim()) {
-              addStop(name.trim(), coords.lat, coords.lng);
-              clearSearch();
-              map.setCenter(coords);
-              map.setZoom(16);
-            }
-          };
-          searchResults.appendChild(div);
-          searchResults.style.display = "block";
-          return;
-        }
-        searchTimeout = setTimeout(() => searchAddress(query, requestId), 500);
+          return scriptPromise;
+        };
+
+        mapsRoot.importLibrary = (libraryName,...args) =>
+          loadScript().then(() => mapsRoot.importLibrary(libraryName,...args));
+
+        Promise.all(["maps","marker","places"].map(name => mapsRoot.importLibrary(name)))
+          .then(([mapsLib,markerLib,placesLibrary]) =>
+            resolve({maps:mapsLib,marker:markerLib,places:placesLibrary})
+          ).catch(reject);
       });
-      async function searchAddress(query, requestId) {
-        try {
-          if (!placesLib) throw new Error("Google Places todavía no está disponible.");
-          if (!autocompleteSessionToken) autocompleteSessionToken = new placesLib.AutocompleteSessionToken();
-          const response = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input: query,
-            sessionToken: autocompleteSessionToken,
-            locationRestriction: BBOX,
-            language: "es",
-            region: "ES",
-          });
-          if (requestId !== searchRequestId) return;
-          searchResults.innerHTML = "";
-          const predictions = (response.suggestions || []).map((s) => s.placePrediction).filter(Boolean);
-          if (!predictions.length) {
-            const empty = document.createElement("div");
-            empty.className = "result-item";
-            empty.textContent = "Sin resultados en Alicante/Murcia. Prueba otra búsqueda, toca el mapa o pega coordenadas.";
-            searchResults.appendChild(empty);
-            searchResults.style.display = "block";
-            return;
-          }
-          predictions.slice(0, 6).forEach((prediction) => {
-            const div = document.createElement("div");
-            div.className = "result-item";
-            const title = document.createElement("strong");
-            title.textContent = prediction.mainText?.text || prediction.text?.text || "Lugar";
-            const sub = document.createElement("span");
-            sub.className = "result-sub";
-            sub.textContent = prediction.secondaryText?.text || "";
-            div.append(title, sub);
-            div.onclick = async () => {
-              try {
-                const place = prediction.toPlace();
-                await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] });
-                if (!place.location) throw new Error("Google no ha devuelto las coordenadas de este lugar.");
-                const lat = place.location.lat(),
-                  lng = place.location.lng();
-                const name = place.displayName?.text || prediction.mainText?.text || place.formattedAddress || "Ubicación";
-                addStop(name, lat, lng);
-                clearSearch();
-                map.setCenter({ lat, lng });
-                map.setZoom(16);
-                autocompleteSessionToken = null;
-              } catch (err) {
-                console.error(err);
-                alert("No se pudo obtener la ubicación: " + err.message);
-              }
-            };
-            searchResults.appendChild(div);
-          });
-          searchResults.style.display = "block";
-        } catch (err) {
-          console.error("Error Places:", err);
-          searchResults.innerHTML = "";
-          const d = document.createElement("div");
-          d.className = "result-item";
-          d.textContent = "Error en Google Places. Comprueba que Places API (New) está habilitada y que la clave tiene permiso.";
-          searchResults.appendChild(d);
-          searchResults.style.display = "block";
-        }
+
+      return googleMapsLoadPromise;
+    }
+
+    async function initGoogleMaps() {
+      if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "TU_CLAVE_API") {
+        document.getElementById("map").innerHTML =
+          '<div style="padding:20px;color:#fff">Falta introducir la clave API de Google Maps en el código.</div>';
+        return;
       }
-      function clearSearch() {
-        searchInput.value = "";
+
+      try {
+        const libraries = await loadGoogleMapsApi();
+        const {Map} = libraries.maps;
+        const markerLib = libraries.marker;
+        placesLib = libraries.places;
+        AdvancedMarkerElement = markerLib.AdvancedMarkerElement;
+        PinElement = markerLib.PinElement;
+
+        map = new Map(document.getElementById("map"),{
+          center:CENTER_DEFAULT,
+          zoom:9,
+          mapId:"DEMO_MAP_ID",
+          mapTypeId:"roadmap",
+          streetViewControl:false,
+          mapTypeControl:false,
+          fullscreenControl:false,
+          gestureHandling:"greedy"
+        });
+
+        infoWindow = new google.maps.InfoWindow();
+
+        map.addListener("click",e => {
+          if (!e.latLng) return;
+          const lat = Number(e.latLng.lat().toFixed(6));
+          const lng = Number(e.latLng.lng().toFixed(6));
+          const defaultName = `Punto mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+          const name = prompt("Nombre para esta parada (ej. Nave 4, Cliente...):",defaultName);
+          if (name !== null && name.trim()) addStop(name.trim(),lat,lng);
+        });
+
+        saveAndRender();
+        locateUser(true);
+      } catch(err) {
+        console.error("Google Maps:",err);
+        document.getElementById("map").innerHTML =
+          '<div style="padding:20px;color:#fff">No se pudo cargar Google Maps. Comprueba la clave, la facturación y las restricciones de la API. Consulta la consola del navegador para ver el error.</div>';
+      }
+    }
+
+    function makeMarkerContent(number,isStart=false) {
+      const el = document.createElement("div");
+      el.className = "gm-stop-pin" + (isStart ? " start" : "");
+      el.textContent = String(number);
+      return el;
+    }
+
+    function removeAllStopMarkers() {
+      markersLayer.forEach(m => m.map = null);
+      markersLayer = [];
+    }
+
+    function clearRouteLine() {
+      if (routeLine) {
+        routeLine.setMap(null);
+        routeLine = null;
+      }
+    }
+
+    function toggleMapSize() {
+      const el = document.getElementById("map");
+      const btn = document.getElementById("size-btn");
+      el.classList.toggle("expanded");
+      btn.textContent = el.classList.contains("expanded") ? "🗕 Reducir" : "⛶ Ampliar";
+      setTimeout(() => {
+        if (map) google.maps.event.trigger(map,"resize");
+      },280);
+    }
+
+    function toggleMapLayer() {
+      if (!map) return;
+      isSatellite = !isSatellite;
+      map.setMapTypeId(isSatellite ? "hybrid" : "roadmap");
+      document.getElementById("layer-btn").textContent = isSatellite ? "🗺️ Mapa" : "🛰️ Satélite";
+    }
+
+    function locateUser(centerMap=false) {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          userCoords = [pos.coords.latitude,pos.coords.longitude];
+          if (gpsMarker) gpsMarker.map = null;
+          const el = document.createElement("div");
+          el.className = "gm-gps-pin";
+          el.textContent = "🚚";
+          gpsMarker = new AdvancedMarkerElement({
+            map,
+            position:{lat:userCoords[0],lng:userCoords[1]},
+            content:el,
+            title:"Tu ubicación actual"
+          });
+          if (centerMap && map) {
+            map.setCenter({lat:userCoords[0],lng:userCoords[1]});
+            map.setZoom(15);
+          }
+        },
+        err => console.warn("Error GPS:",err),
+        {enableHighAccuracy:true,timeout:8000}
+      );
+    }
+
+    function parseGoogleCoords(text) {
+      const match = text.trim().match(/^(-?\d{1,2}[.,]\d+)\s*[,;\s]\s*(-?\d{1,3}[.,]\d+)$/);
+      if (!match) return null;
+      const lat = parseFloat(match[1].replace(",","."));
+      const lng = parseFloat(match[2].replace(",","."));
+      return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+        ? {lat:+lat.toFixed(6),lng:+lng.toFixed(6)}
+        : null;
+    }
+
+    searchInput.addEventListener("input",() => {
+      clearTimeout(searchTimeout);
+      const query = searchInput.value.trim();
+      const requestId = ++searchRequestId;
+
+      if (query.length < 3) {
         searchResults.style.display = "none";
-        autocompleteSessionToken = null;
-        searchRequestId++;
+        return;
       }
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".search-box")) searchResults.style.display = "none";
-      });
 
-      function addStop(name, lat, lng, timeFrom = "", timeTo = "", serviceMins = "") {
-        stops.push({
-          id: Date.now() + Math.random(),
-          name,
-          lat,
-          lng,
-          done: false,
-          isStart: false,
-          timeFrom: timeFrom || "",
-          timeTo: timeTo || "",
-          serviceMins: serviceMins !== "" && serviceMins !== null ? serviceMins : "",
-          eta: "",
-          etaStatus: "",
-        });
-        saveAndRender();
-      }
-      function openTimeModal(index) {
-        editingTimeIndex = index;
-        const s = stops[index];
-        document.getElementById("time-modal-title").textContent = `#${index + 1} - ${s.name}`;
-        document.getElementById("modal-time-from").value = s.timeFrom || "";
-        document.getElementById("modal-time-to").value = s.timeTo || "";
-        document.getElementById("modal-service-mins").value = s.serviceMins !== undefined ? s.serviceMins : "";
-        document.getElementById("time-modal").style.display = "block";
-      }
-      function closeTimeModal() {
-        document.getElementById("time-modal").style.display = "none";
-        editingTimeIndex = null;
-      }
-      function saveStopTime() {
-        if (editingTimeIndex === null) return;
-        const s = stops[editingTimeIndex];
-        s.timeFrom = document.getElementById("modal-time-from").value;
-        s.timeTo = document.getElementById("modal-time-to").value;
-        s.serviceMins = document.getElementById("modal-service-mins").value;
-        s.eta = "";
-        closeTimeModal();
-        saveAndRender();
-      }
-      function clearStopTime() {
-        if (editingTimeIndex === null) return;
-        const s = stops[editingTimeIndex];
-        s.timeFrom = "";
-        s.timeTo = "";
-        s.serviceMins = "";
-        s.eta = "";
-        closeTimeModal();
-        saveAndRender();
-      }
-      function setAsStart(index) {
-        stops.forEach((s, i) => (s.isStart = i === index ? !s.isStart : false));
-        if (stops[index].isStart) document.getElementById("start-from-gps").checked = false;
-        saveAndRender();
-      }
-      function removeStop(index) {
-        stops.splice(index, 1);
-        clearRouteLine();
-        if (stops.length >= 2) markManualChange();
-        saveAndRender();
-      }
-      function toggleDone(index) {
-        stops[index].done = !stops[index].done;
-        saveAndRender();
-      }
-      function markManualChange() {
-        clearRouteLine();
-        stops.forEach((s) => {
-          s.eta = "";
-          s.etaStatus = "";
-        });
-        if (stops.length >= 2) {
-          needsManualRecalc = true;
-          document.getElementById("btn-recalc").style.display = "flex";
-        }
-      }
-      function moveStop(index, direction) {
-        const ni = index + direction;
-        if (ni < 0 || ni >= stops.length) return;
-        [stops[index], stops[ni]] = [stops[ni], stops[index]];
-        markManualChange();
-        saveAndRender();
-      }
-      function reorderStopsArray(from, to) {
-        if (from === to || from < 0 || to < 0 || from >= stops.length || to >= stops.length) return;
-        const [m] = stops.splice(from, 1);
-        stops.splice(to, 0, m);
-        markManualChange();
-        saveAndRender();
-      }
-      function clearAllStops() {
-        if (!stops.length) return;
-        if (confirm("¿Borrar todas las paradas de la lista actual?")) {
-          stops = [];
-          clearRouteLine();
-          needsManualRecalc = false;
-          document.getElementById("btn-recalc").style.display = "none";
-          document.getElementById("summary-bar").style.display = "none";
-          saveAndRender();
-        }
-      }
-      function fitMapToStops() {
-        if (!map) return;
-        const points = stops.map((s) => ({ lat: Number(s.lat), lng: Number(s.lng) }));
-        if (userCoords) points.push({ lat: userCoords[0], lng: userCoords[1] });
-        if (points.length === 1) {
-          map.setCenter(points[0]);
-          map.setZoom(15);
-        } else if (points.length > 1) {
-          const bounds = new google.maps.LatLngBounds();
-          points.forEach((p) => bounds.extend(p));
-          map.fitBounds(bounds, 30);
-        }
-      }
-      function timeToSeconds(v) {
-        if (!v) return null;
-        const [h, m] = v.split(":").map(Number);
-        return h * 3600 + m * 60;
-      }
-      function secondsToTime(sec) {
-        const total = Math.round(sec / 60),
-          h = Math.floor(total / 60) % 24,
-          m = total % 60;
-        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      }
-      function adjustSegmentDuration(rawSeconds, distanceMeters) {
-        if (!rawSeconds || rawSeconds <= 0) return 0;
-        if (!distanceMeters || distanceMeters <= 0) return rawSeconds < 420 ? rawSeconds * 1.3 + 150 : rawSeconds * 1.3;
-        const speed = distanceMeters / 1000 / (rawSeconds / 3600);
-        if (speed >= 65 && distanceMeters > 2500) return rawSeconds;
-        if (rawSeconds < 420) return rawSeconds * 1.3 + 150;
-        return rawSeconds * 1.3;
-      }
-      function drawRoute(coords) {
-        clearRouteLine();
-        routeLine = new google.maps.Polyline({
-          path: coords.map((c) => ({ lat: c[1], lng: c[0] })),
-          geodesic: false,
-          strokeColor: "#3b82f6",
-          strokeOpacity: 0.85,
-          strokeWeight: 5,
-          map,
-        });
-        const bounds = new google.maps.LatLngBounds();
-        coords.forEach((c) => bounds.extend({ lat: c[1], lng: c[0] }));
-        map.fitBounds(bounds, 30);
-      }
-      function updateSummary(route, totalAdjustedDriveSec, simClock) {
-        const km = (route.distance / 1000).toFixed(1),
-          mins = Math.round(totalAdjustedDriveSec / 60),
-          hours = Math.floor(mins / 60),
-          rem = mins % 60;
-        document.getElementById("total-dist").textContent = `${km} km`;
-        document.getElementById("total-time").textContent = hours ? `${hours}h ${rem}m` : `${mins} min`;
-        document.getElementById("end-time").textContent = secondsToTime(simClock);
-        document.getElementById("summary-bar").style.display = "flex";
-      }
-      function getStopServiceSec(p, defaultServiceSec) {
-        if (p.isGps) return 0;
-        if (p.serviceMins !== undefined && p.serviceMins !== "" && !isNaN(parseInt(p.serviceMins, 10)))
-          return parseInt(p.serviceMins, 10) * 60;
-        return defaultServiceSec;
-      }
-      async function recalculateCurrentOrder() {
-        if (stops.length < 2) return;
-        const btn = document.getElementById("btn-recalc");
-        btn.disabled = true;
-        btn.textContent = "⏳ Recalculando tiempos y ruta...";
-        const useGps = document.getElementById("start-from-gps").checked && userCoords !== null,
-          dep = document.getElementById("departure-time").value,
-          startSec = timeToSeconds(dep) ?? timeToSeconds("08:00"),
-          defaultServiceSec = (parseInt(document.getElementById("service-mins").value, 10) || 0) * 60;
-        try {
-          const points = [];
-          if (useGps) points.push({ lat: userCoords[0], lng: userCoords[1], isGps: true });
-          stops.forEach((s) => points.push(s));
-          const coordStr = points.map((p) => `${p.lng},${p.lat}`).join(";"),
-            url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
-          const res = await fetch(url),
-            data = await res.json();
-          if (data.code !== "Ok" || !data.routes?.length) throw new Error("No se pudo calcular el recorrido en este orden.");
-          const route = data.routes[0],
-            legs = route.legs;
-          let clock = startSec,
-            totalDrive = 0;
-          for (let i = 0; i < points.length; i++) {
-            const p = points[i];
-            if (i > 0 && legs[i - 1]) {
-              const d = adjustSegmentDuration(legs[i - 1].duration, legs[i - 1].distance);
-              totalDrive += d;
-              clock += d;
-            }
-            if (!p.isGps) {
-              p.eta = secondsToTime(clock);
-              const from = timeToSeconds(p.timeFrom),
-                to = timeToSeconds(p.timeTo);
-              if (to !== null && clock > to) p.etaStatus = "late";
-              else if (from !== null && clock < from) {
-                p.etaStatus = "wait";
-                clock = from;
-              } else p.etaStatus = "ok";
-              if (i < points.length - 1) clock += getStopServiceSec(p, defaultServiceSec);
-            }
-          }
-          drawRoute(route.geometry.coordinates);
-          updateSummary(route, totalDrive, clock);
-          needsManualRecalc = false;
-          btn.style.display = "none";
-        } catch (err) {
-          alert("Error al recalcular: " + err.message);
-        } finally {
-          btn.textContent = "🔄 Recalcular este orden manual";
-          btn.disabled = false;
-          saveAndRender();
-        }
-      }
-      async function optimizeRoute() {
-        if (stops.length < 2) {
-          alert("Añade al menos 2 paradas para ordenar la ruta.");
-          return;
-        }
-        const btn = document.getElementById("btn-optimize");
-        btn.disabled = true;
-        btn.textContent = "⏳ Optimizando ruta y horarios...";
-        const useGps = document.getElementById("start-from-gps").checked && userCoords !== null,
-          manualStartIdx = stops.findIndex((s) => s.isStart),
-          startSec = timeToSeconds(document.getElementById("departure-time").value) ?? timeToSeconds("08:00"),
-          defaultServiceSec = (parseInt(document.getElementById("service-mins").value, 10) || 0) * 60;
-        try {
-          const points = [];
-          let fixed = false;
-          if (useGps) {
-            points.push({ lat: userCoords[0], lng: userCoords[1], isGps: true });
-            stops.forEach((s) => points.push(s));
-            fixed = true;
-          } else if (manualStartIdx !== -1) {
-            points.push(stops[manualStartIdx]);
-            stops.forEach((s, i) => {
-              if (i !== manualStartIdx) points.push(s);
-            });
-            fixed = true;
-          } else stops.forEach((s) => points.push(s));
-          const coordString = points.map((p) => `${p.lng},${p.lat}`).join(";"),
-            tableUrl = `https://router.project-osrm.org/table/v1/driving/${coordString}?annotations=duration,distance`;
-          const tableRes = await fetch(tableUrl),
-            table = await tableRes.json();
-          if (table.code !== "Ok" || !table.durations) throw new Error("No se pudo calcular la matriz de distancias.");
-          const rawD = table.durations,
-            rawDist = table.distances || [],
-            n = points.length;
-          const durations = Array.from({ length: n }, (_, r) =>
-            Array.from({ length: n }, (_, c) => {
-              if (r === c) return 0;
-              const d = rawD[r][c];
-              if (d == null) return 999999;
-              return adjustSegmentDuration(d, rawDist[r]?.[c] || 0);
-            }),
+      const coords = parseGoogleCoords(query);
+
+      if (coords) {
+        searchResults.innerHTML = "";
+        const div = document.createElement("div");
+        div.className = "result-item";
+        const strong = document.createElement("strong");
+        strong.textContent = "📍 Añadir coordenadas de Google Maps";
+        const sub = document.createElement("span");
+        sub.className = "result-sub";
+        sub.textContent = `Lat: ${coords.lat}, Lng: ${coords.lng} (Toca para ponerle nombre)`;
+        div.append(strong,sub);
+
+        div.onclick = () => {
+          const name = prompt(
+            "Nombre del cliente o empresa para estas coordenadas:",
+            `Cliente (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
           );
-          function evaluate(order) {
-            let t = startSec,
-              driveTotal = 0,
-              penalty = 0;
-            for (let i = 0; i < order.length; i++) {
-              const p = points[order[i]];
-              if (i > 0) {
-                const d = durations[order[i - 1]][order[i]] || 999999;
-                driveTotal += d;
-                t += d;
-              }
-              if (!p.isGps) {
-                const from = timeToSeconds(p.timeFrom),
-                  to = timeToSeconds(p.timeTo);
-                if (from !== null && t < from) {
-                  penalty += (from - t) * 1.5;
-                  t = from;
-                }
-                if (to !== null && t > to) penalty += 50000 + (t - to) * 20;
-                if (i < order.length - 1) t += getStopServiceSec(p, defaultServiceSec);
-              }
-            }
-            return driveTotal + penalty;
-          }
-          function buildInitial(start) {
-            const visited = Array(n).fill(false);
-            let order = [start];
-            visited[start] = true;
-            let sim = startSec + getStopServiceSec(points[start], defaultServiceSec);
-            for (let step = 1; step < n; step++) {
-              const last = order[order.length - 1];
-              let best = -1,
-                bestScore = Infinity;
-              for (let c = 0; c < n; c++)
-                if (!visited[c]) {
-                  const drive = durations[last][c] || 999999;
-                  let arrival = sim + drive,
-                    score = drive;
-                  const from = timeToSeconds(points[c].timeFrom),
-                    to = timeToSeconds(points[c].timeTo);
-                  if (from !== null && arrival < from) {
-                    score += (from - arrival) * 1.5;
-                    arrival = from;
-                  }
-                  if (to !== null) {
-                    if (arrival > to) score += 50000 + (arrival - to) * 20;
-                    else {
-                      const slack = to - arrival;
-                      if (slack < 3600) score -= (3600 - slack) * 0.2;
-                    }
-                  }
-                  if (score < bestScore) {
-                    bestScore = score;
-                    best = c;
-                  }
-                }
-              if (best !== -1) {
-                visited[best] = true;
-                order.push(best);
-                const d = durations[last][best] || 0;
-                sim += d;
-                const from = timeToSeconds(points[best].timeFrom);
-                if (from !== null && sim < from) sim = from;
-                sim += getStopServiceSec(points[best], defaultServiceSec);
-              }
-            }
-            let improved = true;
-            while (improved) {
-              improved = false;
-              for (let i = 1; i < order.length - 1; i++)
-                for (let k = i + 1; k < order.length; k++) {
-                  const candidate = [...order.slice(0, i), ...order.slice(i, k + 1).reverse(), ...order.slice(k + 1)];
-                  if (evaluate(candidate) < evaluate(order) - 0.1) {
-                    order = candidate;
-                    improved = true;
-                  }
-                }
-            }
-            return order;
-          }
-          let bestOrder = [];
-          if (fixed) bestOrder = buildInitial(0);
-          else {
-            let min = Infinity;
-            for (let i = 0; i < n; i++) {
-              const candidate = buildInitial(i),
-                cost = evaluate(candidate);
-              if (cost < min) {
-                min = cost;
-                bestOrder = candidate;
-              }
-            }
-          }
-          const ordered = bestOrder.map((i) => points[i]);
-          stops = ordered.filter((p) => !p.isGps);
-          const routeUrl = `https://router.project-osrm.org/route/v1/driving/${ordered.map((p) => `${p.lng},${p.lat}`).join(";")}?overview=full&geometries=geojson`;
-          const routeRes = await fetch(routeUrl),
-            routeData = await routeRes.json();
-          if (routeData.code !== "Ok" || !routeData.routes?.length) throw new Error("No se pudo dibujar la ruta calculada.");
-          const route = routeData.routes[0],
-            legs = route.legs;
-          let clock = startSec,
-            totalDrive = 0;
-          for (let i = 0; i < ordered.length; i++) {
-            const p = ordered[i];
-            if (i > 0 && legs[i - 1]) {
-              const d = adjustSegmentDuration(legs[i - 1].duration, legs[i - 1].distance);
-              totalDrive += d;
-              clock += d;
-            }
-            if (!p.isGps) {
-              p.eta = secondsToTime(clock);
-              const from = timeToSeconds(p.timeFrom),
-                to = timeToSeconds(p.timeTo);
-              if (to !== null && clock > to) p.etaStatus = "late";
-              else if (from !== null && clock < from) {
-                p.etaStatus = "wait";
-                clock = from;
-              } else p.etaStatus = "ok";
-              if (i < ordered.length - 1) clock += getStopServiceSec(p, defaultServiceSec);
-            }
-          }
-          drawRoute(route.geometry.coordinates);
-          updateSummary(route, totalDrive, clock);
-          needsManualRecalc = false;
-          document.getElementById("btn-recalc").style.display = "none";
-        } catch (err) {
-          alert("Error al optimizar: " + err.message);
-        } finally {
-          btn.innerHTML = `⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">${stops.length}</span>)`;
-          btn.disabled = false;
-          saveAndRender();
-        }
-      }
-      function formatMetaLabels(from, to, service) {
-        const a = [];
-        if (from && to) a.push(`🕒 ${from} - ${to}`);
-        else if (from) a.push(`🕒 Desde ${from}`);
-        else if (to) a.push(`🕒 Antes de ${to}`);
-        if (service !== undefined && service !== "") a.push(`📦 ${service}m`);
-        return a.join(" · ");
-      }
-      let dragSrcIdx = null,
-        touchDragIdx = null;
-      function attachDragEvents(card, handle, idx) {
-        card.draggable = true;
-        card.addEventListener("dragstart", (e) => {
-          dragSrcIdx = idx;
-          card.classList.add("dragging");
-          e.dataTransfer.effectAllowed = "move";
-        });
-        card.addEventListener("dragend", () => {
-          card.classList.remove("dragging");
-          document.querySelectorAll(".stop-card").forEach((c) => c.classList.remove("drag-over"));
-        });
-        card.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          card.classList.add("drag-over");
-        });
-        card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
-        card.addEventListener("drop", (e) => {
-          e.preventDefault();
-          card.classList.remove("drag-over");
-          if (dragSrcIdx !== null && dragSrcIdx !== idx) reorderStopsArray(dragSrcIdx, idx);
-          dragSrcIdx = null;
-        });
-        handle.addEventListener(
-          "touchstart",
-          () => {
-            touchDragIdx = idx;
-            card.classList.add("dragging");
-          },
-          { passive: true },
-        );
-        handle.addEventListener(
-          "touchmove",
-          (e) => {
-            if (touchDragIdx === null) return;
-            e.preventDefault();
-            const t = e.touches[0],
-              target = document.elementFromPoint(t.clientX, t.clientY),
-              tc = target?.closest(".stop-card");
-            document.querySelectorAll(".stop-card").forEach((c) => c.classList.remove("drag-over"));
-            if (tc && tc !== card) tc.classList.add("drag-over");
-          },
-          { passive: false },
-        );
-        handle.addEventListener("touchend", (e) => {
-          if (touchDragIdx === null) return;
-          card.classList.remove("dragging");
-          const t = e.changedTouches[0],
-            target = document.elementFromPoint(t.clientX, t.clientY),
-            tc = target?.closest(".stop-card");
-          document.querySelectorAll(".stop-card").forEach((c) => c.classList.remove("drag-over"));
-          if (tc?.dataset.index !== undefined) {
-            const to = parseInt(tc.dataset.index, 10);
-            if (to !== touchDragIdx) reorderStopsArray(touchDragIdx, to);
-          }
-          touchDragIdx = null;
-        });
-      }
-      function saveAndRender() {
-        localStorage.setItem("reparto_stops", JSON.stringify(stops));
-        const count = document.getElementById("stop-count");
-        if (count) count.textContent = stops.length;
-        document.getElementById("saved-count").textContent = savedClients.length;
-        if (map) {
-          removeAllStopMarkers();
-          stops.forEach((s, i) => {
-            const marker = new AdvancedMarkerElement({
-              map,
-              position: { lat: Number(s.lat), lng: Number(s.lng) },
-              content: makeMarkerContent(i + 1, s.isStart),
-              title: `#${i + 1} ${s.name}`,
-            });
-            marker.addListener("click", () => {
-              const content = document.createElement("div");
-              const b = document.createElement("strong");
-              b.textContent = `#${i + 1} `;
-              content.append(b, document.createTextNode(s.name));
-              infoWindow.setContent(content);
-              infoWindow.open({ map, anchor: marker });
-            });
-            markersLayer.push(marker);
-          });
-        }
-        const list = document.getElementById("stop-list");
-        if (!list) return;
-        list.innerHTML = "";
-        stops.forEach((s, i) => {
-          const url = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving`,
-            meta = formatMetaLabels(s.timeFrom, s.timeTo, s.serviceMins);
-          let eta = "";
-          if (s.eta) {
-            if (s.etaStatus === "late")
-              eta = `<span class="badge-time badge-eta-late">⚠️ Llegada: ${s.eta} (Fuera de hora)</span>`;
-            else if (s.etaStatus === "wait")
-              eta = `<span class="badge-time badge-eta-wait">⏳ Llegada: ${s.eta} (Espera apertura)</span>`;
-            else eta = `<span class="badge-time badge-eta-ok">✓ Llegada est.: ${s.eta}</span>`;
-          }
-          const card = document.createElement("div");
-          card.className = `stop-card ${s.done ? "done" : ""} ${s.isStart ? "is-start" : ""}`;
-          card.dataset.index = i;
-          card.innerHTML = `<div class="stop-header"><div class="drag-handle" title="Arrastrar para reordenar">⋮⋮</div><div class="stop-num">${i + 1}</div><div class="stop-info"><div class="stop-title"></div><div class="stop-meta">${meta ? `<span class="badge-time">${meta}</span>` : ""}${eta}</div></div><button class="btn-sm btn-icon" title="Horario y tiempo de descarga" onclick="openTimeModal(${i})">🕒</button><button class="btn-sm btn-icon" title="Fijar como punto de salida" onclick="setAsStart(${i})">🚩</button><button class="btn-sm btn-icon" title="Guardar en clientes habituales" onclick="saveClient(${i})">⭐</button></div><div class="stop-actions"><a href="${url}" target="_blank" rel="noopener" class="btn-sm btn-nav">🧭 Ir (Maps)</a><button class="btn-sm ${s.done ? "btn-secondary" : "btn-primary"}" onclick="toggleDone(${i})">${s.done ? "↩️ Deshacer" : "✓ Entregado"}</button><button class="btn-sm btn-icon" onclick="moveStop(${i},-1)">↑</button><button class="btn-sm btn-icon" onclick="moveStop(${i},1)">↓</button><button class="btn-sm btn-danger" onclick="removeStop(${i})">✕</button></div>`;
-          const title = card.querySelector(".stop-title");
-          title.textContent = s.name + (s.isStart ? " (SALIDA)" : "");
-          if (s.isStart)
-            title.insertAdjacentHTML("beforeend", ' <span style="color:var(--warning);font-size:.75rem">(SALIDA)</span>');
-          // Reemplazar el texto añadido antes para evitar duplicar la etiqueta
-          if (s.isStart) title.textContent = s.name;
-          card.querySelector(".stop-title").appendChild(document.createTextNode(s.isStart ? " (SALIDA)" : ""));
-          list.appendChild(card);
-          attachDragEvents(card, card.querySelector(".drag-handle"), i);
-        });
-      }
-      function saveClient(index) {
-        const s = stops[index],
-          name = prompt("Guardar cliente habitual como:", s.name);
-        if (!name || !name.trim()) return;
-        savedClients.push({
-          name: name.trim(),
-          lat: s.lat,
-          lng: s.lng,
-          timeFrom: s.timeFrom || "",
-          timeTo: s.timeTo || "",
-          serviceMins: s.serviceMins || "",
-        });
-        localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
-        saveAndRender();
-        alert("Cliente (con su horario y tiempo) guardado en tu lista ⭐");
-      }
-      function openSavedModal() {
-        document.getElementById("saved-search-input").value = "";
-        renderSavedList();
-        document.getElementById("saved-modal").style.display = "block";
-      }
-      function closeSavedModal() {
-        document.getElementById("saved-modal").style.display = "none";
-      }
-      function renderSavedList() {
-        const box = document.getElementById("saved-list"),
-          term = document.getElementById("saved-search-input").value.trim().toLowerCase();
-        box.innerHTML = "";
-        if (!savedClients.length) {
-          box.innerHTML =
-            '<p style="color:var(--muted);font-size:.9rem">Aún no tienes clientes guardados. Pulsa la ⭐ en cualquier parada para guardarla.</p>';
-          return;
-        }
-        const filtered = savedClients.map((c, i) => ({ c, i })).filter((x) => x.c.name.toLowerCase().includes(term));
-        if (!filtered.length) {
-          box.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Ningún cliente coincide con esa búsqueda.</p>';
-          return;
-        }
-        filtered.forEach(({ c, i }) => {
-          const div = document.createElement("div");
-          div.className = "saved-item";
-          const info = document.createElement("div");
-          info.style.flex = "1";
-          info.style.fontSize = ".9rem";
-          const strong = document.createElement("strong");
-          strong.textContent = c.name;
-          info.appendChild(strong);
-          const w = formatMetaLabels(c.timeFrom, c.timeTo, c.serviceMins);
-          if (w) {
-            const small = document.createElement("div");
-            small.style.cssText = "font-size:.75rem;color:var(--muted);margin-top:2px";
-            small.textContent = w;
-            info.appendChild(small);
-          }
-          div.append(info);
-          const add = document.createElement("button");
-          add.className = "btn-sm btn-success";
-          add.textContent = "+ Ruta";
-          add.onclick = () => addSavedToRoute(i);
-          const del = document.createElement("button");
-          del.className = "btn-sm btn-danger";
-          del.textContent = "✕";
-          del.onclick = () => deleteSaved(i);
-          div.append(add, del);
-          box.appendChild(div);
-        });
-      }
-      function addSavedToRoute(i) {
-        const c = savedClients[i];
-        addStop(c.name, c.lat, c.lng, c.timeFrom, c.timeTo, c.serviceMins);
-        closeSavedModal();
-      }
-      function deleteSaved(i) {
-        savedClients.splice(i, 1);
-        localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
-        renderSavedList();
-        saveAndRender();
-      }
-      function exportBackup() {
-        const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedClients, null, 2)),
-          a = document.createElement("a");
-        a.href = data;
-        a.download = `clientes_reparto_${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-      }
-      function importBackup(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const data = JSON.parse(e.target.result);
-            if (Array.isArray(data)) {
-              savedClients = data;
-              localStorage.setItem("reparto_saved", JSON.stringify(savedClients));
-              renderSavedList();
-              saveAndRender();
-              alert("Copia restaurada correctamente.");
-            } else throw new Error();
-          } catch (err) {
-            alert("Archivo de copia no válido.");
+          if (name && name.trim()) {
+            addStop(name.trim(),coords.lat,coords.lng);
+            clearSearch();
+            map.setCenter(coords);
+            map.setZoom(16);
           }
         };
-        reader.readAsText(file);
-        event.target.value = "";
+
+        searchResults.appendChild(div);
+        searchResults.style.display = "block";
+        return;
       }
 
-      initGoogleMaps();
-    </script>
-  </body>
+      searchTimeout = setTimeout(() => searchAddress(query,requestId),500);
+    });
+
+    async function searchAddress(query,requestId) {
+      try {
+        if (!placesLib) throw new Error("Google Places todavía no está disponible.");
+        if (!autocompleteSessionToken) autocompleteSessionToken = new placesLib.AutocompleteSessionToken();
+
+        const response = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input:query,
+          sessionToken:autocompleteSessionToken,
+          locationRestriction:BBOX,
+          language:"es",
+          region:"ES"
+        });
+
+        if (requestId !== searchRequestId) return;
+
+        searchResults.innerHTML = "";
+        const predictions = (response.suggestions || []).map(s => s.placePrediction).filter(Boolean);
+
+        if (!predictions.length) {
+          const empty = document.createElement("div");
+          empty.className = "result-item";
+          empty.textContent = "Sin resultados en Alicante/Murcia. Prueba otra búsqueda, toca el mapa o pega coordenadas.";
+          searchResults.appendChild(empty);
+          searchResults.style.display = "block";
+          return;
+        }
+
+        predictions.slice(0,6).forEach(prediction => {
+          const div = document.createElement("div");
+          div.className = "result-item";
+          const title = document.createElement("strong");
+          title.textContent = prediction.mainText?.text || prediction.text?.text || "Lugar";
+          const sub = document.createElement("span");
+          sub.className = "result-sub";
+          sub.textContent = prediction.secondaryText?.text || "";
+          div.append(title,sub);
+
+          div.onclick = async () => {
+            try {
+              const place = prediction.toPlace();
+              await place.fetchFields({fields:["displayName","formattedAddress","location"]});
+              if (!place.location) throw new Error("Google no ha devuelto las coordenadas de este lugar.");
+              const lat = place.location.lat();
+              const lng = place.location.lng();
+              const name = place.displayName?.text || prediction.mainText?.text || place.formattedAddress || "Ubicación";
+              addStop(name,lat,lng);
+              clearSearch();
+              map.setCenter({lat,lng});
+              map.setZoom(16);
+              autocompleteSessionToken = null;
+            } catch(err) {
+              console.error(err);
+              alert("No se pudo obtener la ubicación: " + err.message);
+            }
+          };
+
+          searchResults.appendChild(div);
+        });
+
+        searchResults.style.display = "block";
+      } catch(err) {
+        console.error("Error Places:",err);
+        searchResults.innerHTML = "";
+        const d = document.createElement("div");
+        d.className = "result-item";
+        d.textContent = "Error en Google Places. Comprueba que Places API (New) está habilitada y que la clave tiene permiso.";
+        searchResults.appendChild(d);
+        searchResults.style.display = "block";
+      }
+    }
+
+    function clearSearch() {
+      searchInput.value = "";
+      searchResults.style.display = "none";
+      autocompleteSessionToken = null;
+      searchRequestId++;
+    }
+
+    document.addEventListener("click",e => {
+      if (!e.target.closest(".search-box")) searchResults.style.display = "none";
+    });
+
+    function addStop(name,lat,lng,timeFrom="",timeTo="",serviceMins="") {
+      stops.push({
+        id:Date.now()+Math.random(),name,lat,lng,done:false,isStart:false,
+        timeFrom:timeFrom || "",timeTo:timeTo || "",
+        serviceMins:serviceMins !== "" && serviceMins !== null ? serviceMins : "",
+        eta:"",etaStatus:""
+      });
+      saveAndRender();
+    }
+
+    function openTimeModal(index) {
+      editingTimeIndex = index;
+      const s = stops[index];
+      document.getElementById("time-modal-title").textContent = `#${index+1} - ${s.name}`;
+      document.getElementById("modal-time-from").value = s.timeFrom || "";
+      document.getElementById("modal-time-to").value = s.timeTo || "";
+      document.getElementById("modal-service-mins").value = s.serviceMins !== undefined ? s.serviceMins : "";
+      document.getElementById("time-modal").style.display = "block";
+    }
+
+    function closeTimeModal() {
+      document.getElementById("time-modal").style.display = "none";
+      editingTimeIndex = null;
+    }
+
+    function saveStopTime() {
+      if (editingTimeIndex === null) return;
+      const s = stops[editingTimeIndex];
+      s.timeFrom = document.getElementById("modal-time-from").value;
+      s.timeTo = document.getElementById("modal-time-to").value;
+      s.serviceMins = document.getElementById("modal-service-mins").value;
+      s.eta = "";
+      closeTimeModal();
+      saveAndRender();
+    }
+
+    function clearStopTime() {
+      if (editingTimeIndex === null) return;
+      const s = stops[editingTimeIndex];
+      s.timeFrom = "";
+      s.timeTo = "";
+      s.serviceMins = "";
+      s.eta = "";
+      closeTimeModal();
+      saveAndRender();
+    }
+
+    function setAsStart(index) {
+      stops.forEach((s,i) => s.isStart = i === index ? !s.isStart : false);
+      if (stops[index].isStart) document.getElementById("start-from-gps").checked = false;
+      saveAndRender();
+    }
+
+    function removeStop(index) {
+      stops.splice(index,1);
+      clearRouteLine();
+      if (stops.length >= 2) markManualChange();
+      saveAndRender();
+    }
+
+    function toggleDone(index) {
+      stops[index].done = !stops[index].done;
+      saveAndRender();
+    }
+
+    function markManualChange() {
+      clearRouteLine();
+      stops.forEach(s => {
+        s.eta = "";
+        s.etaStatus = "";
+      });
+      if (stops.length >= 2) {
+        needsManualRecalc = true;
+        document.getElementById("btn-recalc").style.display = "flex";
+      }
+    }
+
+    function moveStop(index,direction) {
+      const ni = index+direction;
+      if (ni < 0 || ni >= stops.length) return;
+      [stops[index],stops[ni]] = [stops[ni],stops[index]];
+      markManualChange();
+      saveAndRender();
+    }
+
+    function reorderStopsArray(from,to) {
+      if (from === to || from < 0 || to < 0 || from >= stops.length || to >= stops.length) return;
+      const [m] = stops.splice(from,1);
+      stops.splice(to,0,m);
+      markManualChange();
+      saveAndRender();
+    }
+
+    function clearAllStops() {
+      if (!stops.length) return;
+      if (confirm("¿Borrar todas las paradas de la lista actual?")) {
+        stops = [];
+        clearRouteLine();
+        needsManualRecalc = false;
+        document.getElementById("btn-recalc").style.display = "none";
+        document.getElementById("summary-bar").style.display = "none";
+        saveAndRender();
+      }
+    }
+
+    function fitMapToStops() {
+      if (!map) return;
+      const points = stops.map(s => ({lat:Number(s.lat),lng:Number(s.lng)}));
+      if (userCoords) points.push({lat:userCoords[0],lng:userCoords[1]});
+      if (points.length === 1) {
+        map.setCenter(points[0]);
+        map.setZoom(15);
+      } else if (points.length > 1) {
+        const bounds = new google.maps.LatLngBounds();
+        points.forEach(p => bounds.extend(p));
+        map.fitBounds(bounds,30);
+      }
+    }
+
+    function timeToSeconds(v) {
+      if (!v) return null;
+      const [h,m] = v.split(":").map(Number);
+      return h*3600+m*60;
+    }
+
+    function secondsToTime(sec) {
+      const total = Math.round(sec/60);
+      const h = Math.floor(total/60)%24;
+      const m = total%60;
+      return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+    }
+
+    function adjustSegmentDuration(rawSeconds,distanceMeters) {
+      if (!rawSeconds || rawSeconds <= 0) return 0;
+      if (!distanceMeters || distanceMeters <= 0) return rawSeconds < 420 ? rawSeconds*1.3+150 : rawSeconds*1.3;
+      const speed = distanceMeters/1000/(rawSeconds/3600);
+      if (speed >= 65 && distanceMeters > 2500) return rawSeconds;
+      if (rawSeconds < 420) return rawSeconds*1.3+150;
+      return rawSeconds*1.3;
+    }
+
+    function drawRoute(coords) {
+      clearRouteLine();
+      routeLine = new google.maps.Polyline({
+        path:coords.map(c => ({lat:c[1],lng:c[0]})),
+        geodesic:false,
+        strokeColor:"#3b82f6",
+        strokeOpacity:.85,
+        strokeWeight:5,
+        map
+      });
+      const bounds = new google.maps.LatLngBounds();
+      coords.forEach(c => bounds.extend({lat:c[1],lng:c[0]}));
+      map.fitBounds(bounds,30);
+    }
+
+    function updateSummary(route,totalAdjustedDriveSec,simClock) {
+      const km = (route.distance/1000).toFixed(1);
+      const mins = Math.round(totalAdjustedDriveSec/60);
+      const hours = Math.floor(mins/60);
+      const rem = mins%60;
+      document.getElementById("total-dist").textContent = `${km} km`;
+      document.getElementById("total-time").textContent = hours ? `${hours}h ${rem}m` : `${mins} min`;
+      document.getElementById("end-time").textContent = secondsToTime(simClock);
+      document.getElementById("summary-bar").style.display = "flex";
+    }
+
+    function getStopServiceSec(p,defaultServiceSec) {
+      if (p.isGps) return 0;
+      if (p.serviceMins !== undefined && p.serviceMins !== "" && !isNaN(parseInt(p.serviceMins,10)))
+        return parseInt(p.serviceMins,10)*60;
+      return defaultServiceSec;
+    }
+
+    /*
+      Solicita a Valhalla la ruta en formato compatible con OSRM.
+      Así mantenemos el formato de datos que usan las funciones actuales:
+      routes[0].legs, routes[0].distance y routes[0].geometry.coordinates.
+    */
+    async function requestValhallaRoute(points) {
+      const response = await fetch(VALHALLA_ROUTE_URL,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "X-Client-Id":"rutareparto"
+        },
+        body:JSON.stringify({
+          locations:points.map(p => ({
+            lat:Number(p.lat),
+            lon:Number(p.lng)
+          })),
+          costing:"auto",
+          units:"kilometers",
+          language:"es-ES",
+          format:"osrm",
+          shape_format:"geojson"
+        })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch(err) {
+        throw new Error("El servidor de Valhalla no ha devuelto una respuesta válida.");
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.status_message || `Error HTTP ${response.status} de Valhalla.`
+        );
+      }
+
+      if (data.code !== "Ok" || !data.routes || !data.routes.length) {
+        throw new Error(
+          data.message || data.error || data.status_message || "Valhalla no ha encontrado una ruta."
+        );
+      }
+
+      const route = data.routes[0];
+
+      if (!route.legs || !route.geometry || !route.geometry.coordinates) {
+        throw new Error("Valhalla ha respondido, pero faltan datos de la ruta.");
+      }
+
+      return data;
+    }
+
+    async function recalculateCurrentOrder() {
+      if (stops.length < 2) return;
+
+      const btn = document.getElementById("btn-recalc");
+      btn.disabled = true;
+      btn.textContent = "⏳ Recalculando tiempos y ruta...";
+
+      const useGps = document.getElementById("start-from-gps").checked && userCoords !== null;
+      const dep = document.getElementById("departure-time").value;
+      const startSec = timeToSeconds(dep) ?? timeToSeconds("08:00");
+      const defaultServiceSec = (parseInt(document.getElementById("service-mins").value,10) || 0)*60;
+
+      try {
+        const points = [];
+        if (useGps) points.push({lat:userCoords[0],lng:userCoords[1],isGps:true});
+        stops.forEach(s => points.push(s));
+
+        const data = await requestValhallaRoute(points);
+
+        if (data.code !== "Ok" || !data.routes?.length)
+          throw new Error("No se pudo calcular el recorrido en este orden.");
+
+        const route = data.routes[0];
+        const legs = route.legs;
+        let clock = startSec;
+        let totalDrive = 0;
+
+        for (let i=0;i<points.length;i++) {
+          const p = points[i];
+
+          if (i > 0 && legs[i-1]) {
+            const d = adjustSegmentDuration(legs[i-1].duration,legs[i-1].distance);
+            totalDrive += d;
+            clock += d;
+          }
+
+          if (!p.isGps) {
+            p.eta = secondsToTime(clock);
+            const from = timeToSeconds(p.timeFrom);
+            const to = timeToSeconds(p.timeTo);
+
+            if (to !== null && clock > to) p.etaStatus = "late";
+            else if (from !== null && clock < from) {
+              p.etaStatus = "wait";
+              clock = from;
+            } else p.etaStatus = "ok";
+
+            if (i < points.length-1) clock += getStopServiceSec(p,defaultServiceSec);
+          }
+        }
+
+        drawRoute(route.geometry.coordinates);
+        updateSummary(route,totalDrive,clock);
+        needsManualRecalc = false;
+        btn.style.display = "none";
+      } catch(err) {
+        console.error("Error Valhalla:",err);
+        alert("Error al recalcular: " + err.message);
+      } finally {
+        btn.textContent = "🔄 Recalcular este orden manual";
+        btn.disabled = false;
+        saveAndRender();
+      }
+    }
+
+    async function optimizeRoute() {
+      if (stops.length < 2) {
+        alert("Añade al menos 2 paradas para ordenar la ruta.");
+        return;
+      }
+
+      const btn = document.getElementById("btn-optimize");
+      btn.disabled = true;
+      btn.textContent = "⏳ Optimizando ruta y horarios...";
+
+      const useGps = document.getElementById("start-from-gps").checked && userCoords !== null;
+      const manualStartIdx = stops.findIndex(s => s.isStart);
+      const startSec = timeToSeconds(document.getElementById("departure-time").value) ?? timeToSeconds("08:00");
+      const defaultServiceSec = (parseInt(document.getElementById("service-mins").value,10) || 0)*60;
+
+      try {
+        const points = [];
+        let fixed = false;
+
+        if (useGps) {
+          points.push({lat:userCoords[0],lng:userCoords[1],isGps:true});
+          stops.forEach(s => points.push(s));
+          fixed = true;
+        } else if (manualStartIdx !== -1) {
+          points.push(stops[manualStartIdx]);
+          stops.forEach((s,i) => {
+            if (i !== manualStartIdx) points.push(s);
+          });
+          fixed = true;
+        } else {
+          stops.forEach(s => points.push(s));
+        }
+
+        // La matriz de optimización continúa usando OSRM.
+        // En esta primera prueba cambiamos únicamente el cálculo y dibujo final de la ruta.
+        const coordString = points.map(p => `${p.lng},${p.lat}`).join(";");
+        const tableUrl = `https://router.project-osrm.org/table/v1/driving/${coordString}?annotations=duration,distance`;
+
+        const tableRes = await fetch(tableUrl);
+        const table = await tableRes.json();
+
+        if (table.code !== "Ok" || !table.durations)
+          throw new Error("No se pudo calcular la matriz de distancias.");
+
+        const rawD = table.durations;
+        const rawDist = table.distances || [];
+        const n = points.length;
+
+        const durations = Array.from({length:n},(_,r) =>
+          Array.from({length:n},(_,c) => {
+            if (r === c) return 0;
+            const d = rawD[r][c];
+            if (d == null) return 999999;
+            return adjustSegmentDuration(d,rawDist[r]?.[c] || 0);
+          })
+        );
+
+        function evaluate(order) {
+          let t = startSec;
+          let driveTotal = 0;
+          let penalty = 0;
+
+          for (let i=0;i<order.length;i++) {
+            const p = points[order[i]];
+
+            if (i > 0) {
+              const d = durations[order[i-1]][order[i]] || 999999;
+              driveTotal += d;
+              t += d;
+            }
+
+            if (!p.isGps) {
+              const from = timeToSeconds(p.timeFrom);
+              const to = timeToSeconds(p.timeTo);
+
+              if (from !== null && t < from) {
+                penalty += (from-t)*1.5;
+                t = from;
+              }
+
+              if (to !== null && t > to) penalty += 50000+(t-to)*20;
+              if (i < order.length-1) t += getStopServiceSec(p,defaultServiceSec);
+            }
+          }
+
+          return driveTotal+penalty;
+        }
+
+        function buildInitial(start) {
+          const visited = Array(n).fill(false);
+          let order = [start];
+          visited[start] = true;
+          let sim = startSec+getStopServiceSec(points[start],defaultServiceSec);
+
+          for (let step=1;step<n;step++) {
+            const last = order[order.length-1];
+            let best = -1;
+            let bestScore = Infinity;
+
+            for (let c=0;c<n;c++) {
+              if (visited[c]) continue;
+
+              const drive = durations[last][c] || 999999;
+              let arrival = sim+drive;
+              let score = drive;
+              const from = timeToSeconds(points[c].timeFrom);
+              const to = timeToSeconds(points[c].timeTo);
+
+              if (from !== null && arrival < from) {
+                score += (from-arrival)*1.5;
+                arrival = from;
+              }
+
+              if (to !== null) {
+                if (arrival > to) score += 50000+(arrival-to)*20;
+                else {
+                  const slack = to-arrival;
+                  if (slack < 3600) score -= (3600-slack)*.2;
+                }
+              }
+
+              if (score < bestScore) {
+                bestScore = score;
+                best = c;
+              }
+            }
+
+            if (best !== -1) {
+              visited[best] = true;
+              order.push(best);
+              const d = durations[last][best] || 0;
+              sim += d;
+              const from = timeToSeconds(points[best].timeFrom);
+              if (from !== null && sim < from) sim = from;
+              sim += getStopServiceSec(points[best],defaultServiceSec);
+            }
+          }
+
+          let improved = true;
+
+          while (improved) {
+            improved = false;
+
+            for (let i=1;i<order.length-1;i++) {
+              for (let k=i+1;k<order.length;k++) {
+                const candidate = [
+                  ...order.slice(0,i),
+                  ...order.slice(i,k+1).reverse(),
+                  ...order.slice(k+1)
+                ];
+
+                if (evaluate(candidate) < evaluate(order)-.1) {
+                  order = candidate;
+                  improved = true;
+                }
+              }
+            }
+          }
+
+          return order;
+        }
+
+        let bestOrder = [];
+
+        if (fixed) {
+          bestOrder = buildInitial(0);
+        } else {
+          let min = Infinity;
+
+          for (let i=0;i<n;i++) {
+            const candidate = buildInitial(i);
+            const cost = evaluate(candidate);
+
+            if (cost < min) {
+              min = cost;
+              bestOrder = candidate;
+            }
+          }
+        }
+
+        const ordered = bestOrder.map(i => points[i]);
+        stops = ordered.filter(p => !p.isGps);
+
+        // El trazado definitivo de la ruta ya se calcula con Valhalla.
+        const routeData = await requestValhallaRoute(ordered);
+
+        if (routeData.code !== "Ok" || !routeData.routes?.length)
+          throw new Error("No se pudo dibujar la ruta calculada.");
+
+        const route = routeData.routes[0];
+        const legs = route.legs;
+        let clock = startSec;
+        let totalDrive = 0;
+
+        for (let i=0;i<ordered.length;i++) {
+          const p = ordered[i];
+
+          if (i > 0 && legs[i-1]) {
+            const d = adjustSegmentDuration(legs[i-1].duration,legs[i-1].distance);
+            totalDrive += d;
+            clock += d;
+          }
+
+          if (!p.isGps) {
+            p.eta = secondsToTime(clock);
+            const from = timeToSeconds(p.timeFrom);
+            const to = timeToSeconds(p.timeTo);
+
+            if (to !== null && clock > to) p.etaStatus = "late";
+            else if (from !== null && clock < from) {
+              p.etaStatus = "wait";
+              clock = from;
+            } else p.etaStatus = "ok";
+
+            if (i < ordered.length-1) clock += getStopServiceSec(p,defaultServiceSec);
+          }
+        }
+
+        drawRoute(route.geometry.coordinates);
+        updateSummary(route,totalDrive,clock);
+        needsManualRecalc = false;
+        document.getElementById("btn-recalc").style.display = "none";
+
+      } catch(err) {
+        console.error("Error al optimizar:",err);
+        alert("Error al optimizar: " + err.message);
+      } finally {
+        btn.innerHTML = `⚡ ORDENAR RUTA ÓPTIMA (<span id="stop-count">${stops.length}</span>)`;
+        btn.disabled = false;
+        saveAndRender();
+      }
+    }
+
+    function formatMetaLabels(from,to,service) {
+      const a = [];
+      if (from && to) a.push(`🕒 ${from} - ${to}`);
+      else if (from) a.push(`🕒 Desde ${from}`);
+      else if (to) a.push(`🕒 Antes de ${to}`);
+      if (service !== undefined && service !== "") a.push(`📦 ${service}m`);
+      return a.join(" · ");
+    }
+
+    let dragSrcIdx = null, touchDragIdx = null;
+
+    function attachDragEvents(card,handle,idx) {
+      card.draggable = true;
+
+      card.addEventListener("dragstart",e => {
+        dragSrcIdx = idx;
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+
+      card.addEventListener("dragend",() => {
+        card.classList.remove("dragging");
+        document.querySelectorAll(".stop-card").forEach(c => c.classList.remove("drag-over"));
+      });
+
+      card.addEventListener("dragover",e => {
+        e.preventDefault();
+        card.classList.add("drag-over");
+      });
+
+      card.addEventListener("dragleave",() => card.classList.remove("drag-over"));
+
+      card.addEventListener("drop",e => {
+        e.preventDefault();
+        card.classList.remove("drag-over");
+        if (dragSrcIdx !== null && dragSrcIdx !== idx) reorderStopsArray(dragSrcIdx,idx);
+        dragSrcIdx = null;
+      });
+
+      handle.addEventListener("touchstart",() => {
+        touchDragIdx = idx;
+        card.classList.add("dragging");
+      },{passive:true});
+
+      handle.addEventListener("touchmove",e => {
+        if (touchDragIdx === null) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        const target = document.elementFromPoint(t.clientX,t.clientY);
+        const tc = target?.closest(".stop-card");
+        document.querySelectorAll(".stop-card").forEach(c => c.classList.remove("drag-over"));
+        if (tc && tc !== card) tc.classList.add("drag-over");
+      },{passive:false});
+
+      handle.addEventListener("touchend",e => {
+        if (touchDragIdx === null) return;
+        card.classList.remove("dragging");
+        const t = e.changedTouches[0];
+        const target = document.elementFromPoint(t.clientX,t.clientY);
+        const tc = target?.closest(".stop-card");
+        document.querySelectorAll(".stop-card").forEach(c => c.classList.remove("drag-over"));
+
+        if (tc?.dataset.index !== undefined) {
+          const to = parseInt(tc.dataset.index,10);
+          if (to !== touchDragIdx) reorderStopsArray(touchDragIdx,to);
+        }
+
+        touchDragIdx = null;
+      });
+    }
+
+    function saveAndRender() {
+      localStorage.setItem("reparto_stops",JSON.stringify(stops));
+
+      const count = document.getElementById("stop-count");
+      if (count) count.textContent = stops.length;
+      document.getElementById("saved-count").textContent = savedClients.length;
+
+      if (map) {
+        removeAllStopMarkers();
+
+        stops.forEach((s,i) => {
+          const marker = new AdvancedMarkerElement({
+            map,
+            position:{lat:Number(s.lat),lng:Number(s.lng)},
+            content:makeMarkerContent(i+1,s.isStart),
+            title:`#${i+1} ${s.name}`
+          });
+
+          marker.addListener("click",() => {
+            const content = document.createElement("div");
+            const b = document.createElement("strong");
+            b.textContent = `#${i+1} `;
+            content.append(b,document.createTextNode(s.name));
+            infoWindow.setContent(content);
+            infoWindow.open({map,anchor:marker});
+          });
+
+          markersLayer.push(marker);
+        });
+      }
+
+      const list = document.getElementById("stop-list");
+      if (!list) return;
+      list.innerHTML = "";
+
+      stops.forEach((s,i) => {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving`;
+        const meta = formatMetaLabels(s.timeFrom,s.timeTo,s.serviceMins);
+        let eta = "";
+
+        if (s.eta) {
+          if (s.etaStatus === "late")
+            eta = `<span class="badge-time badge-eta-late">⚠️ Llegada: ${s.eta} (Fuera de hora)</span>`;
+          else if (s.etaStatus === "wait")
+            eta = `<span class="badge-time badge-eta-wait">⏳ Llegada: ${s.eta} (Espera apertura)</span>`;
+          else
+            eta = `<span class="badge-time badge-eta-ok">✓ Llegada est.: ${s.eta}</span>`;
+        }
+
+        const card = document.createElement("div");
+        card.className = `stop-card ${s.done ? "done" : ""} ${s.isStart ? "is-start" : ""}`;
+        card.dataset.index = i;
+
+        card.innerHTML = `
+          <div class="stop-header">
+            <div class="drag-handle" title="Arrastrar para reordenar">⋮⋮</div>
+            <div class="stop-num">${i+1}</div>
+            <div class="stop-info">
+              <div class="stop-title"></div>
+              <div class="stop-meta">${meta ? `<span class="badge-time">${meta}</span>` : ""}${eta}</div>
+            </div>
+            <button class="btn-sm btn-icon" title="Horario y tiempo de descarga" onclick="openTimeModal(${i})">🕒</button>
+            <button class="btn-sm btn-icon" title="Fijar como punto de salida" onclick="setAsStart(${i})">🚩</button>
+            <button class="btn-sm btn-icon" title="Guardar en clientes habituales" onclick="saveClient(${i})">⭐</button>
+          </div>
+          <div class="stop-actions">
+            <a href="${url}" target="_blank" rel="noopener" class="btn-sm btn-nav">🧭 Ir (Maps)</a>
+            <button class="btn-sm ${s.done ? "btn-secondary" : "btn-primary"}" onclick="toggleDone(${i})">${s.done ? "↩️ Deshacer" : "✓ Entregado"}</button>
+            <button class="btn-sm btn-icon" onclick="moveStop(${i},-1)">↑</button>
+            <button class="btn-sm btn-icon" onclick="moveStop(${i},1)">↓</button>
+            <button class="btn-sm btn-danger" onclick="removeStop(${i})">✕</button>
+          </div>
+        `;
+
+        const title = card.querySelector(".stop-title");
+        title.textContent = s.name + (s.isStart ? " (SALIDA)" : "");
+
+        list.appendChild(card);
+        attachDragEvents(card,card.querySelector(".drag-handle"),i);
+      });
+    }
+
+    function saveClient(index) {
+      const s = stops[index];
+      const name = prompt("Guardar cliente habitual como:",s.name);
+      if (!name || !name.trim()) return;
+
+      savedClients.push({
+        name:name.trim(),
+        lat:s.lat,
+        lng:s.lng,
+        timeFrom:s.timeFrom || "",
+        timeTo:s.timeTo || "",
+        serviceMins:s.serviceMins || ""
+      });
+
+      localStorage.setItem("reparto_saved",JSON.stringify(savedClients));
+      saveAndRender();
+      alert("Cliente (con su horario y tiempo) guardado en tu lista ⭐");
+    }
+
+    function openSavedModal() {
+      document.getElementById("saved-search-input").value = "";
+      renderSavedList();
+      document.getElementById("saved-modal").style.display = "block";
+    }
+
+    function closeSavedModal() {
+      document.getElementById("saved-modal").style.display = "none";
+    }
+
+    function renderSavedList() {
+      const box = document.getElementById("saved-list");
+      const term = document.getElementById("saved-search-input").value.trim().toLowerCase();
+      box.innerHTML = "";
+
+      if (!savedClients.length) {
+        box.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Aún no tienes clientes guardados. Pulsa la ⭐ en cualquier parada para guardarla.</p>';
+        return;
+      }
+
+      const filtered = savedClients
+        .map((c,i) => ({c,i}))
+        .filter(x => x.c.name.toLowerCase().includes(term));
+
+      if (!filtered.length) {
+        box.innerHTML = '<p style="color:var(--muted);font-size:.9rem">Ningún cliente coincide con esa búsqueda.</p>';
+        return;
+      }
+
+      filtered.forEach(({c,i}) => {
+        const div = document.createElement("div");
+        div.className = "saved-item";
+
+        const info = document.createElement("div");
+        info.style.flex = "1";
+        info.style.fontSize = ".9rem";
+
+        const strong = document.createElement("strong");
+        strong.textContent = c.name;
+        info.appendChild(strong);
+
+        const w = formatMetaLabels(c.timeFrom,c.timeTo,c.serviceMins);
+
+        if (w) {
+          const small = document.createElement("div");
+          small.style.cssText = "font-size:.75rem;color:var(--muted);margin-top:2px";
+          small.textContent = w;
+          info.appendChild(small);
+        }
+
+        div.append(info);
+
+        const add = document.createElement("button");
+        add.className = "btn-sm btn-success";
+        add.textContent = "+ Ruta";
+        add.onclick = () => addSavedToRoute(i);
+
+        const del = document.createElement("button");
+        del.className = "btn-sm btn-danger";
+        del.textContent = "✕";
+        del.onclick = () => deleteSaved(i);
+
+        div.append(add,del);
+        box.appendChild(div);
+      });
+    }
+
+    function addSavedToRoute(i) {
+      const c = savedClients[i];
+      addStop(c.name,c.lat,c.lng,c.timeFrom,c.timeTo,c.serviceMins);
+      closeSavedModal();
+    }
+
+    function deleteSaved(i) {
+      savedClients.splice(i,1);
+      localStorage.setItem("reparto_saved",JSON.stringify(savedClients));
+      renderSavedList();
+      saveAndRender();
+    }
+
+    function exportBackup() {
+      const data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedClients,null,2));
+      const a = document.createElement("a");
+      a.href = data;
+      a.download = `clientes_reparto_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+
+          if (Array.isArray(data)) {
+            savedClients = data;
+            localStorage.setItem("reparto_saved",JSON.stringify(savedClients));
+            renderSavedList();
+            saveAndRender();
+            alert("Copia restaurada correctamente.");
+          } else {
+            throw new Error();
+          }
+        } catch(err) {
+          alert("Archivo de copia no válido.");
+        }
+      };
+
+      reader.readAsText(file);
+      event.target.value = "";
+    }
+
+    initGoogleMaps();
+  </script>
+</body>
 </html>
